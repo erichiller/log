@@ -21,24 +21,6 @@ _srcfile = os.path.normcase(_srcfile)
 
 
 
-def prompt_continue(exit_on_yes=False, message="Do you wish to proceed?", logger: logging.Logger = config.DEFAULT_LOGGER_NAME) -> bool:
-    """ Prompt user as to whether or not to continue
-
-    exit - if exit is set, then sys.exit() is run rather than False being returned
-        if exit is set, the user will be warned that an affirmative will exit
-    """
-    # see if user wishes to continue anyways
-    exitwarn = "*** An answer of no will exit the program ***\n" if exit_on_yes else ""
-    if input(f"{exitwarn}{message} (Y/N): ").lower() in "y":
-        logger.log("Continuing with user input")
-        return True
-    else:
-        logger.log("Exiting on user prompt...")
-        sys.exit()
-    return False
-
-
-
 class Log(logging.Logger):
     """ Extend Logger """
 
@@ -57,35 +39,80 @@ class Log(logging.Logger):
         # set prompt_continue logger to self
         setattr(self.prompt_continue.__func__, '__kwdefaults__', {'logger': self})
 
-    prompt_continue = prompt_continue
+
+    def prompt_continue(self, exit_on_yes=False, message="Do you wish to proceed?") -> bool:
+        """ Prompt user as to whether or not to continue
+
+        exit - if exit is set, then sys.exit() is run rather than False being returned
+            if exit is set, the user will be warned that an affirmative will exit
+        """
+        # see if user wishes to continue anyways
+        exitwarn = "*** An answer of no will exit the program ***\n" if exit_on_yes else ""
+        if input(f"{exitwarn}{message} (Y/N): ").lower() in "y":
+            self.info("Continuing with user input")
+            return True
+        else:
+            self.notice("Exiting on user prompt...")
+            sys.exit()
+        return False
 
 
     def trace(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
-        """ Incredibly detailed level, report fine actions taken by program """
+        """ Incredibly detailed level, report fine actions taken by program
+
+        Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
+        """
         self.log(msg=msg, level=Level.TRACE, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def debug(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
-        """ Detailed information for the user """
-        self.log(msg=msg, level=logging.DEBUG, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
+    def debug(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
+        """ Detailed information for the user
+
+        Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
+        """
+        self.log(msg=msg, level=Level.DEBUG, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info, *args, **kwargs)
 
     def info(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
-        """ General information for the user """
+        """ General information for the user
+
+        Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
+        """
         self.log(msg=msg, level=logging.INFO, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
     def notice(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
-        """ Elevated information for the user """
+        """ Elevated information for the user
+
+        Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
+        """
         self.log(msg=msg, level=Level.NOTICE, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
     def error(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
-        """ Severe issue has occurred """
+        """ Severe issue has occurred
+
+        Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
+        """
         self.log(msg=msg, level=logging.ERROR, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
     def warning(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
-        """ Warn about non-severe but concerning issue """
+        """ Warn about non-severe but concerning issue
+
+        Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
+        """
         self.log(msg=msg, level=logging.WARNING, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
     def log(self, level=logging.INFO, msg=None, title: str=None, heading: bool=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
-        """ Define Custom logger with additional arguments. """
+        """ Define Custom logger with additional arguments.
+
+        Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
+        """
+        # correct for the **VERY** often reversed level & msg
+        if not isinstance(level, int) and ( msg is None or isinstance(msg, int) ):
+            if msg is None:
+                msg = level
+                level = logging.INFO
+            else:
+                _level = msg
+                msg = level
+                level = _level
         filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
         # if the title was set from setTitle
         if self.title:
@@ -103,7 +130,10 @@ class Log(logging.Logger):
             'exc_info': self.exc_info(stack_trace),
             'context': self.context
         }
-        logging.Logger.log(self, level, msg, {**{}, **extra} )
+        try:
+            logging.Logger.log(self, int(level), msg, {**kwargs, **extra} )
+        except Exception as e:
+            print(f"an error occurred whilst logging, printing to stdout instead. \nerror: {e}")
         """ handle context opening to current transition now that the formatter has acted, push context to the next step """
         if self.context == LogContextStatus.OPENING:
             self.context = LogContextStatus.CURRENT

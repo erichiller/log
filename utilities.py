@@ -5,6 +5,7 @@ import sys
 import os
 
 from .formatter import DynamicLogFormatter
+from .handler import ElasticLogHandler
 from . import level as Level
 from .logger import Log
 from .context import LogContext
@@ -26,6 +27,7 @@ error    = getLogger(config.DEFAULT_LOGGER_NAME).error
 
 log      = getLogger(config.DEFAULT_LOGGER_NAME).log
 
+prompt_continue = getLogger(config.DEFAULT_LOGGER_NAME).prompt_continue
 
 
 def display_level_status(logger: logging.Logger):
@@ -89,7 +91,7 @@ def ResetAllLoggers():
 
 
 
-def configure_logging(log_file_path: str, log_console_level: int, color: bool=True):
+def configure_logging(log_file_path: str, log_console_level: int, elastic_log_host: str = None, elastic_log_index_name: str = "", color: bool=True):
     """ Set up Logging which the entire run will use """
     logger = getLogger()
     # logger must be set to lowest and handlers configure from there
@@ -97,16 +99,26 @@ def configure_logging(log_file_path: str, log_console_level: int, color: bool=Tr
     dyn_console           = logging.StreamHandler(sys.stdout)
     dyn_console.formatter = DynamicLogFormatter(color)
     dyn_console.setLevel(log_console_level)
+
+    if not os.path.isdir(os.path.dirname(log_file_path)):
+        raise FileNotFoundError(f"Can not create the FileHandler for logging at {log_file_path}, most likely the parent directory does not exist")
     log_file                = logging.FileHandler(log_file_path)
     log_file.formatter      = DynamicLogFormatter()
     # Setting to 0, send EVERYTHING to the file
     log_file.setLevel(0)
+
+    # Log to ElasticSearch
+    if elastic_log_host is not None:
+        log_elastic                = ElasticLogHandler(elastic_log_host, elastic_log_index_name)
+        # Setting to 0, send EVERYTHING to the ElasticSearch
+        log_elastic.setLevel(0)
+        logger.addHandler(log_elastic)
+
     logger.addHandler(dyn_console)
     logger.addHandler(log_file)
     # Configure associated modules's logging:
     # quiet these modules down
     getLogger("urllib3").setLevel(Level.WARNING)
-    getLogger('zipfile').setLevel(Level.WARNING)
     ####################
     #### Tensorflow ####
     ####################
@@ -115,6 +127,7 @@ def configure_logging(log_file_path: str, log_console_level: int, color: bool=Tr
     os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL']  = '0'
     getLogger('tensorflow').setLevel(Level.WARNING)
+    info("logging configured")
 
 
 

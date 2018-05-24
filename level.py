@@ -3,6 +3,12 @@
 Container for all logging levels
 Define and configure additional logging levels
 https://docs.python.org/3/library/logging.html#logging-levels
+CRITICAL	50
+ERROR	    40
+WARNING	    30
+INFO	    20
+DEBUG	    10
+NOTSET	    0
 """
 
 import logging

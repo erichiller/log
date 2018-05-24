@@ -16,17 +16,17 @@ https://docs.python.org/3/howto/logging.html#useful-handlers
 
 
 
-from .logger import Log, prompt_continue
+from .logger import Log
 from .context import LogContext
 from .formatter import DynamicLogFormatter
-from .utilities import getLogger, progress
+from .utilities import getLogger, progress, prompt_continue
 
 from .level import TRACE, DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL
 
 from . import level as Level
 
 __all__ = [
-    "DynamicLogFormatter", "LogContext", "Log",
+    "DynamicLogFormatter", "ElasticLogHandler", "LogContext", "Log",
     "getLogger", "progress", "prompt_continue",
     "TRACE", "DEBUG", "INFO", "NOTICE", "WARNING", "ERROR", "CRITICAL",
     "Level"

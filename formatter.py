@@ -35,6 +35,13 @@ from . import level as Level
 from .default_config import LogConfig as config
 
 
+
+class LogFormatException(SyntaxError):
+    """ Exception for Log Formatter Errors """
+
+    pass
+
+
 class DynamicLogFormatter(logging.Formatter):
     """ Return a dynamic message dependent upon the level """
 
@@ -69,6 +76,7 @@ class DynamicLogFormatter(logging.Formatter):
     ANSI_BG_WHITE            = "\u001b[47m"
 
     COLOR_LOCATION           = f"{ANSI_BLACK}{ANSI_BG_WHITE}"
+    COLOR_TRACE              = ANSI_WHITE
     COLOR_DEBUG              = ANSI_MAGENTA
     COLOR_NOTICE             = f"{ANSI_BLACK}{ANSI_BG_YELLOW}"
     COLOR_WARNING            = ANSI_RED
@@ -137,10 +145,15 @@ class DynamicLogFormatter(logging.Formatter):
                 output = str()
                 if isinstance(iterate_source, dict):
                     iterate_source = iterate_source.items()
-                for d in iterate_source:
-                    output += self.make_row(*d)
+                try:
+                    iterate_source = iter(iterate_source)
+                    for d in iterate_source:
+                        output += self.make_row(*d)
+                except TypeError:
+                    # raise TypeError("Best handled elsewhere: you requested a table, but this isn't iterable")
+                    output += repr(output)
             else:
-                raise TypeError("Best handled elsewhere")
+                raise TypeError("Best handled elsewhere: this is neither a table, nor a string")
         except TypeError:
             """ when the object is not a string """
             output = pprint.pformat(output, width=self.output_width, indent=4)
@@ -210,7 +223,7 @@ class DynamicLogFormatter(logging.Formatter):
             output = ( f"{output}" + "\n" +                                   # add an END OF BLOCK marker
                        " END ".center(self.column_name_width, "<") )
         if heading is not False:                                              # this has been marked as a heading so give it some flourish
-            title = title.center(self.column_name_width - len(level_print) - len(prepend) - len(prependtime), '>' ) + "\n"
+            title = title.center(self.column_name_width - len(prepend), '>' ) + "\n"
 
         # determine color level, Python has no switch statement
         if record.levelno >= Level.CRITICAL:                                    # set color
@@ -223,6 +236,8 @@ class DynamicLogFormatter(logging.Formatter):
             color = self.COLOR_NOTICE
         elif record.levelno == Level.DEBUG:
             color = self.COLOR_DEBUG
+        elif record.levelno == Level.TRACE:
+            color = self.COLOR_TRACE
         else:
             color = self.COLOR_DEFAULT
 
@@ -291,13 +306,21 @@ class DynamicLogFormatter(logging.Formatter):
             path = record.args["filename"]
             line = record.args["line_number"]
             func = record.args["function_name"]
-        if os.path.isabs(path) and os.path.commonpath([path, config.BASE_PATH]) == config.BASE_PATH:
+
+        if os.path.isabs(path) and os.path.splitdrive(path)[0] == os.path.splitdrive(config.BASE_PATH)[0] and os.path.commonpath([path, config.BASE_PATH]) == config.BASE_PATH:
             path = os.path.relpath(path, config.BASE_PATH)
         return f"{prefix + ' ' + path:100} , {'line # ' + str(line):12} in {func:30}"
 
     def make_row(self, *args)-> str:
         """ Take unlimited arguments and writes the first one as a `title` column, and alternating ones thereafter to columns of ` title | value | title | value .... ` """
-        return args[0].ljust(self.column_name_width) + ": " + "".join(map(str, args[1:])) + "\n"
+        if isinstance(args[0], str):
+            return args[0].ljust(self.column_name_width) + ": " + "".join(map(str, args[1:])) + "\n"
+        elif isinstance(args[0], dict) and len(args) == 1:
+            return self.make_row(**args[0])
+        elif isinstance(repr(args[0]), str):
+            return repr(args[0])
+        else:
+            raise LogFormatException(f"make row encountered an object that refused to be handled {args[0]}")
 
     def formatException(self, exc_info) -> str:
         """ Fullfills https://docs.python.org/3/library/logging.html#logging.Formatter.formatException """
