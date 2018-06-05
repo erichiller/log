@@ -132,6 +132,9 @@ class Log(logging.Logger):
         }
         try:
             logging.Logger.log(self, int(level), msg, {**kwargs, **extra} )
+        except OSError as e:
+            print(f"an OSError occurred whilst logging, turning off file handler printing to stdout instead. \nerror: {e}")
+            self.removeHandler(logging.FileHandler)
         except Exception as e:
             print(f"an error occurred whilst logging, printing to stdout instead. \nerror: {e}")
         """ handle context opening to current transition now that the formatter has acted, push context to the next step """
@@ -205,6 +208,29 @@ class Log(logging.Logger):
             rv = (co.co_filename, f.f_lineno, co.co_name, stack_trace)
             break
         return rv
+
+    # def addHandler(self, hdlr: logging.Handler, handlerName: str = None):
+    #       """ maybe later add support for tagging handlers with a proper name """
+    #     if
+    #     pass;
+
+
+
+
+    def removeHandler(self, hdlr: logging.Handler = None,  handlerClass: type = None):
+        """ Iterate through all log handlers, remove if they match handlerClass type or hdlr Object """
+        if handlerClass is None:
+            if hdlr is None:
+                raise TypeError("Log.removeHandler received neither a valid hdlr or handlerClass to remove, both equated to None")
+            else:
+                super().removeHandler(hdlr)
+                return
+        originalHandler = self.handlers
+        try:
+            self.handlers = [handler for handler in originalHandler if type(handler) is not handlerClass]
+        except Exception as e:
+            self.warning(f"handler removal failed with the error: {e}")
+            pass
 
 
 # Set as logger
