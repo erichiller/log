@@ -104,45 +104,45 @@ class Log(logging.Logger):
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
-        # correct for the **VERY** often reversed level & msg
-        if not isinstance(level, int) and ( msg is None or isinstance(msg, int) ):
-            if msg is None:
-                msg = level
-                level = logging.INFO
-            else:
-                _level = msg
-                msg = level
-                level = _level
-        filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
-        # if the title was set from setTitle
-        if self.title:
-            title = f"{self.title}: {title}"
-        extra = {
-            'title': title,
-            'heading': heading,
-            'table': table,
-            'relatime': relatime,
-            'location': location,
-            'filename': filename,
-            'line_number': line_number,
-            'function_name': function_name,
-            'stack_trace': stack_trace,
-            'exc_info': self.exc_info(stack_trace),
-            'context': self.context
-        }
         try:
+            # correct for the **VERY** often reversed level & msg
+            if not isinstance(level, int) and ( msg is None or isinstance(msg, int) ):
+                if msg is None:
+                    msg = level
+                    level = logging.INFO
+                else:
+                    _level = msg
+                    msg = level
+                    level = _level
+            filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
+            # if the title was set from setTitle
+            if self.title:
+                title = f"{self.title}: {title}"
+            extra = {
+                'title': title,
+                'heading': heading,
+                'table': table,
+                'relatime': relatime,
+                'location': location,
+                'filename': filename,
+                'line_number': line_number,
+                'function_name': function_name,
+                'stack_trace': stack_trace,
+                'exc_info': self.exc_info(stack_trace),
+                'context': self.context
+            }
             logging.Logger.log(self, int(level), msg, {**kwargs, **extra} )
+            """ handle context opening to current transition now that the formatter has acted, push context to the next step """
+            if self.context == LogContextStatus.OPENING:
+                self.context = LogContextStatus.CURRENT
+            """ handle context closing to nocontext transition  the formatter has acted, push context to the next step """
+            if self.context == LogContextStatus.CLOSING:
+                self.context = LogContextStatus.NOCONTEXT
         except OSError as e:
             print(f"an OSError occurred whilst logging, turning off file handler printing to stdout instead. \nerror: {e}")
             self.removeHandler(logging.FileHandler)
         except Exception as e:
             print(f"an error occurred whilst logging, printing to stdout instead. \nerror: {e}")
-        """ handle context opening to current transition now that the formatter has acted, push context to the next step """
-        if self.context == LogContextStatus.OPENING:
-            self.context = LogContextStatus.CURRENT
-        """ handle context closing to nocontext transition  the formatter has acted, push context to the next step """
-        if self.context == LogContextStatus.CLOSING:
-            self.context = LogContextStatus.NOCONTEXT
 
     def exception(self, e: Exception, msg: str=None, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=True):
         """ Exception has occurred, report """
