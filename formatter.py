@@ -207,15 +207,19 @@ class DynamicLogFormatter(logging.Formatter):
         """ handle context """
         if context:
             if context == LogContextStatus.OPENING:
-                context_marker = self.COLOR_CONTEXT_MARKER + f" START {title}".center(self.context_marker_width, ">") + f"\n{clear}"
+                context_marker = self.COLOR_CONTEXT_MARKER + f" START {title} ".center(self.context_marker_width, ">") + f"\n{clear}"
                 closing = heading = False
+
             elif context == LogContextStatus.CURRENT:
                 # NOTE(erichiller) UNSURE OF WHAT TO DO WITH PREPEND RIGHT NOW
                 # prepend   = "\t"
+                # prepend = "↳"
                 closing = heading = False
             elif context == LogContextStatus.CLOSING:
                 closing = heading = False
                 context_marker = self.COLOR_CONTEXT_MARKER + " END ".center(self.context_marker_width, "<") + f"\n{clear}"
+            if record.msg is None:
+                return context_marker
 
         if 'title' in record.args and record.args['title'] not in (None, False):  # add user provided title
             title = f" {record.args['title']} {title}"

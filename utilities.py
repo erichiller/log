@@ -10,6 +10,8 @@ from . import level as Level
 from .logger import Log
 from .context import LogContext
 from .default_config import LogConfig as config
+from .private import QuietFileHandler
+from ..common import get_make_path
 
 
 def getLogger(name=None) -> Log:
@@ -91,23 +93,6 @@ def ResetAllLoggers():
 
 
 
-def setLogLevelStreamHandlers( log_level: int ):
-    """ Iterate through all log handlers and set their levels if they are StreamHandlers"""
-    try:
-        for handler in getLogger().handlers:
-            trace(handler)
-            trace(title="type of handler", msg=type(handler))
-            trace(title="type of StreamHandler", msg=logging.StreamHandler)
-            trace(title="comparison", msg=( type(handler) is logging.StreamHandler ))
-            if type(handler) is logging.StreamHandler:
-                handler.setLevel(log_level)
-                info(f"StreamHandler's verbosity set to {log_level}")
-    except Exception as e:
-        warning(e)
-        pass
-    notice(f"Logging at level: {getLogger(__name__).getEffectiveLevel()}")
-
-
 def configure_logging(log_file_path: str, log_console_level: int, elastic_log_host: str = None, elastic_log_index_name: str = "", color: bool=True):
     """ Set up Logging which the entire run will use """
     logger = getLogger()
@@ -117,9 +102,9 @@ def configure_logging(log_file_path: str, log_console_level: int, elastic_log_ho
     dyn_console.formatter = DynamicLogFormatter(color)
     dyn_console.setLevel(log_console_level)
 
-    if not os.path.isdir(os.path.dirname(log_file_path)):
+    if not os.path.isdir(get_make_path(os.path.dirname(log_file_path))):
         raise FileNotFoundError(f"Can not create the FileHandler for logging at {log_file_path}, most likely the parent directory does not exist")
-    log_file                = logging.FileHandler(log_file_path)
+    log_file                = QuietFileHandler(log_file_path)
     log_file.formatter      = DynamicLogFormatter()
     # Setting to 0, send EVERYTHING to the file
     log_file.setLevel(0)
@@ -135,10 +120,10 @@ def configure_logging(log_file_path: str, log_console_level: int, elastic_log_ho
     logger.addHandler(log_file)
     # Configure associated modules's logging:
     # quiet these modules down
-    logger.log(level=0, msg= f"urllib3 logger level set to {Level.WARNING}")
     getLogger("urllib3").setLevel(Level.WARNING)
-    logger.log(level=0, msg=f"matplotlib logger level set to {Level.WARNING}")
+    logger.log(level=0, msg= f"urllib3 logger level set to {Level.WARNING}")
     getLogger("matplotlib").setLevel(Level.WARNING)
+    logger.log(level=0, msg=f"matplotlib logger level set to {Level.WARNING}")
     ####################
     #### Tensorflow ####
     ####################

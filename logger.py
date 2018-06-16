@@ -4,7 +4,7 @@ import sys
 import os
 import traceback
 
-from .private import LogContextStatus
+from .private import LogContextStatus, QuietFileHandler
 from . import level as Level
 from .default_config import LogConfig as config
 
@@ -26,8 +26,9 @@ class Log(logging.Logger):
 
     def __init__(self, name, level=Level.NOTSET):
         """ Pass name to Logger """
-        self.context = False
-        self.title = None
+        self.context: LogContextStatus = False
+        self.contextObj     = None
+        self.title          = None
 
         logging.Logger.__init__(self, name, level)
 
@@ -115,9 +116,23 @@ class Log(logging.Logger):
                     msg = level
                     level = _level
             filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
+            #NOTE:KILL
+            if self.context == LogContextStatus.CLOSING:
+                if hasattr(self.contextObj, "obj_idx") and self.contextObj.obj_idx != self.contextObj.obj_idx:
+                    logging.Logger.log(self, int(self.contextObj.level), None, {"context": LogContextStatus.CLOSING })
+                self.context = LogContextStatus.NOCONTEXT
+                self.contextObj = None
+                #NOTE:KILL
+                print(f"closing context of log={self.name}")
+
+
+
             # if the title was set from setTitle
             if self.title:
-                title = f"{self.title}: {title}"
+                if title is not None:
+                    title = f"{self.title}: {title}"
+                else:
+                    title = self.title
             extra = {
                 'title': title,
                 'heading': heading,
@@ -134,13 +149,12 @@ class Log(logging.Logger):
             logging.Logger.log(self, int(level), msg, {**kwargs, **extra} )
             """ handle context opening to current transition now that the formatter has acted, push context to the next step """
             if self.context == LogContextStatus.OPENING:
+                #NOTE:KILL
+                print(f"opening context of log={self.name}")
                 self.context = LogContextStatus.CURRENT
-            """ handle context closing to nocontext transition  the formatter has acted, push context to the next step """
-            if self.context == LogContextStatus.CLOSING:
-                self.context = LogContextStatus.NOCONTEXT
         except OSError as e:
-            print(f"an OSError occurred whilst logging, turning off file handler printing to stdout instead. \nerror: {e}")
-            self.removeHandler(logging.FileHandler)
+            self.removeHandler(QuietFileHandler)
+            self.critical(f"an OSError occurred whilst logging, turning off file handler printing to stdout instead. \nerror: {e}")
         except Exception as e:
             print(f"an error occurred whilst logging, printing to stdout instead. \nerror: {e}")
 
