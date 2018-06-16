@@ -27,8 +27,11 @@ class Log(logging.Logger):
     def __init__(self, name, level=Level.NOTSET):
         """ Pass name to Logger """
         self.context: LogContextStatus = False
-        self.contextObj     = None
-        self.title          = None
+        self.context_obj_pending           = None
+        self.context_obj_prior             = None
+        self.context_obj_current                = None
+        self.title: str                = None
+        self.context_count: int        = 0          # a count of logs written while under this context
 
         logging.Logger.__init__(self, name, level)
 
@@ -116,16 +119,18 @@ class Log(logging.Logger):
                     msg = level
                     level = _level
             filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
-            #NOTE:KILL
+            # CLOSE context
+            if self.context == LogContextStatus.CURRENT:
+                self.context_count = self.context_count + 1
             if self.context == LogContextStatus.CLOSING:
-                if hasattr(self.contextObj, "obj_idx") and self.contextObj.obj_idx != self.contextObj.obj_idx:
-                    logging.Logger.log(self, int(self.contextObj.level), None, {"context": LogContextStatus.CLOSING })
-                self.context = LogContextStatus.NOCONTEXT
-                self.contextObj = None
-                #NOTE:KILL
-                print(f"closing context of log={self.name}")
-
-
+                # if self.context_obj_current is None:
+                # NOTE:KILLLLLLLLL
+                # print(f" {'>'*40} closing from {self.context} = {LogContextStatus.CLOSING}\nthe message being logged is:\n{msg}")
+                self.logContextStatusClosing()
+                # if self.context_obj_current
+            if self.context_obj_pending is not None and hasattr(self.context_obj_pending, 'obj_idx'):
+                self.setContextStatus(LogContextStatus.OPENING, self.context_obj_pending)
+                self.context_obj_pending = None
 
             # if the title was set from setTitle
             if self.title:
@@ -143,20 +148,17 @@ class Log(logging.Logger):
                 'line_number': line_number,
                 'function_name': function_name,
                 'stack_trace': stack_trace,
-                'exc_info': self.exc_info(stack_trace),
-                'context': self.context
+                'exc_info': self.exc_info(stack_trace)
             }
             logging.Logger.log(self, int(level), msg, {**kwargs, **extra} )
-            """ handle context opening to current transition now that the formatter has acted, push context to the next step """
-            if self.context == LogContextStatus.OPENING:
-                #NOTE:KILL
-                print(f"opening context of log={self.name}")
-                self.context = LogContextStatus.CURRENT
         except OSError as e:
+            # sometimes the file handle goes invalid, drop the file handler and keep logging to console
             self.removeHandler(QuietFileHandler)
             self.critical(f"an OSError occurred whilst logging, turning off file handler printing to stdout instead. \nerror: {e}")
         except Exception as e:
-            print(f"an error occurred whilst logging, printing to stdout instead. \nerror: {e}")
+            import sys
+            from traceback import print_tb
+            print(f"an error occurred whilst logging, printing to stdout instead. \nerror: {e}\nArguments:\n----------\n{print_tb(e.__traceback__)}\n{sys.exc_info()}\n\n")
 
     def exception(self, e: Exception, msg: str=None, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=True):
         """ Exception has occurred, report """
@@ -186,12 +188,42 @@ class Log(logging.Logger):
             override_stack = e[2]
         return (e[0], e[1], override_stack)
 
-    def setContextStatus(self, context):
+    def setContextStatus(self, context, newcontext_obj=None):
         """ Set Context which will be passed to underlying formatter
 
         :param context: can have one of FOUR values, see LogContext
         """
-        self.context = context
+        # print(f"setContextStatus status was {self.context} and is being set to {context}")
+        # push closing context if required
+        if context == LogContextStatus.OPENING:
+            self.context_obj_current = newcontext_obj
+            self.logContextStatusOpening()
+        else:
+            self.context = context
+
+    def logContextStatusOpening(self):
+        """ Post Logs """
+        if self.context_obj_current.heading is True:
+            context_msg_level = self.context_obj_current.level if type(self.context_obj_current.level) is int else logging.INFO
+            # print(f"{'8'*40} log Opening independently @ level={context_msg_level} {'8'*40}")
+            logging.Logger.log(self, int(context_msg_level), None, {'context': LogContextStatus.OPENING, 'heading': self.context_obj_current.title} )
+        self.context = LogContextStatus.CURRENT
+        self.context_count = self.context_count + 1
+        # print("end of logContextStatusOpening()")
+
+    def logContextStatusClosing(self):
+        """ Post Logs """
+        if self.context_obj_current.heading is True:
+            context_exit_level = self.context_obj_prior.level if hasattr(self.context_obj_prior, 'level') and type(self.context_obj_prior.level) is int else logging.INFO
+            # print(f"{'8'*40} log Closing independently @ level={context_exit_level} [{self.level}] {'8'*40}")
+            save_level = self.level
+            self.level = context_exit_level
+            logging.Logger.log(self, int(context_exit_level), None, {'context': LogContextStatus.CLOSING} )
+            self.level = save_level
+        self.context = LogContextStatus.NOCONTEXT
+        self.context_obj_prior   = self.context_obj_current
+        self.context_obj_current = None
+
 
     def setTitle(self, title):
         """ Set Context which will be passed to underlying formatter """

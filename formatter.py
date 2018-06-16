@@ -133,14 +133,15 @@ class DynamicLogFormatter(logging.Formatter):
         context         = record.args['context'] if 'context' in record.args and record.args['context'] in (LogContextStatus.OPENING, LogContextStatus.CURRENT, LogContextStatus.CLOSING) else False
         clear           = self.clear
         eol             = self.eol
-        relatime        = record.args["relatime"] if 'relatime' in record.args else False
+        relatime        = record.args["relatime"]    if 'relatime'    in record.args else False
         stack_trace     = record.args['stack_trace'] if "stack_trace" in record.args and type(record.args['stack_trace']) is list else False
-        flag_location   = record.args["location"] if 'location' in record.args else False
+        flag_location   = record.args["location"]    if 'location'    in record.args else False
+        table           = record.args["table"]       if 'table'       in record.args else False
 
         try:
             if isinstance( output, str ):
                 pass
-            elif record.args["table"]:
+            elif table:
                 iterate_source = output
                 output = str()
                 if isinstance(iterate_source, dict):
@@ -207,7 +208,7 @@ class DynamicLogFormatter(logging.Formatter):
         """ handle context """
         if context:
             if context == LogContextStatus.OPENING:
-                context_marker = self.COLOR_CONTEXT_MARKER + f" START {title} ".center(self.context_marker_width, ">") + f"\n{clear}"
+                context_marker = self.COLOR_CONTEXT_MARKER + f" START {title} ".center(self.context_marker_width, ">") + f"{clear}"
                 closing = heading = False
 
             elif context == LogContextStatus.CURRENT:
@@ -217,7 +218,7 @@ class DynamicLogFormatter(logging.Formatter):
                 closing = heading = False
             elif context == LogContextStatus.CLOSING:
                 closing = heading = False
-                context_marker = self.COLOR_CONTEXT_MARKER + " END ".center(self.context_marker_width, "<") + f"\n{clear}"
+                context_marker = self.COLOR_CONTEXT_MARKER + " END ".center(self.context_marker_width, "<") + f"{clear}"
             if record.msg is None:
                 return context_marker
 
