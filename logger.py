@@ -203,23 +203,25 @@ class Log(logging.Logger):
 
     def logContextStatusOpening(self):
         """ Post Logs """
-        if self.context_obj_current.heading is True:
+        if self.context_obj_current.heading is not False:
             context_msg_level = self.context_obj_current.level if type(self.context_obj_current.level) is int else logging.INFO
             # print(f"{'8'*40} log Opening independently @ level={context_msg_level} {'8'*40}")
-            logging.Logger.log(self, int(context_msg_level), None, {'context': LogContextStatus.OPENING, 'heading': self.context_obj_current.title} )
+            logging.Logger.log(self, int(context_msg_level), None, {'context': LogContextStatus.OPENING, 'heading': self.context_obj_current.getHeading() } )
         self.context = LogContextStatus.CURRENT
         self.context_count = self.context_count + 1
         # print("end of logContextStatusOpening()")
 
     def logContextStatusClosing(self):
         """ Post Logs """
-        if self.context_obj_current.heading is True:
-            context_exit_level = self.context_obj_prior.level if hasattr(self.context_obj_prior, 'level') and type(self.context_obj_prior.level) is int else logging.INFO
-            # print(f"{'8'*40} log Closing independently @ level={context_exit_level} [{self.level}] {'8'*40}")
+        if self.context_obj_current.heading is not False:
+            # context_exit_level = self.context_obj_prior.level if hasattr(self.context_obj_prior, 'level') and type(self.context_obj_prior.level) is int else logging.INFO
+            context_exit_level = self.context_obj_current.level if hasattr(self.context_obj_current, 'level') and type(self.context_obj_current.level) is int else logging.INFO
+            print(f"{'8'*40} log Closing independently @ level={context_exit_level} [{self.level}] {'8'*40}")
             save_level = self.level
             self.level = context_exit_level
             logging.Logger.log(self, int(context_exit_level), None, {'context': LogContextStatus.CLOSING} )
             self.level = save_level
+        print(f"{'8'*40} log Closing independently - context set to NOCONTEXT")
         self.context = LogContextStatus.NOCONTEXT
         self.context_obj_prior   = self.context_obj_current
         self.context_obj_current = None
