@@ -158,10 +158,14 @@ class LogContext(ContextDecorator, Multiton):
         calling_class = outerframes[-2].function
         try:
             import re
-            wrapped_function = re.search("def\s*(\w*)\s*\(", outerframes[-2].code_context[-1] ).group(1)
-            wrapped_function_lineno = outerframes[-2].lineno + 1
-            calling_filename = outerframes[-2].filename
-        except TypeError:
+            wrapped_function = re.search("def\s*(\w*)\s*\(", outerframes[-2].code_context[-1] )
+            if wrapped_function is not None:
+                wrapped_function = wrapped_function.group(1)
+                wrapped_function_lineno = outerframes[-2].lineno + 1
+                calling_filename = outerframes[-2].filename
+            else:
+                raise AssertionError(f"The search string was not found in {wrapped_function}")
+        except (TypeError, AssertionError):
             return False, False, False, False
         return calling_class, wrapped_function, calling_filename, wrapped_function_lineno
 
