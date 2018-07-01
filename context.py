@@ -1,18 +1,13 @@
 """ Defines logging.LogContext """
 import logging
 from types import MethodType
+from typing import Union, Tuple
 import inspect
 
-from lib.common import ContextDecorator, Multiton, Singleton
-from .private import LogContextStatus
+from lib.common import ContextDecorator, Multiton
+from .private import LogContextStatus, GlobalLogContext, DEBUG_FLAG
 from .logger import Log
 
-
-class GlobalLogContext(Singleton):
-    """ Track global state of log output """
-
-    def __init__(self):
-        
 
 
 
@@ -21,11 +16,11 @@ class LogContext(ContextDecorator, Multiton):
 
     _instances: dict = {}
 
-    def __init__(self, logger: Log = None, title: str = None, heading = True, level: int = None, handler: logging.Handler = None, close: bool = True):
-        """ Initialize LogContext, allows passing of alternate parameters:
+    def __init__(self, logger: Log = None, title: Union[str, bool, None] = None, heading: Union[str, bool] = True, level: int = None, handler: logging.Handler = None, close: bool = True):
+        """ Initialize LogContext, allows passing of alternate parameters
 
-        Paramters
-        ---------
+        Parameters
+        ----------
         logger : Log
             Alternate logger
         title : str
@@ -44,6 +39,14 @@ class LogContext(ContextDecorator, Multiton):
             Additional handler to use (will be ADDED to existing handlers
         close : bool
             Whether or not to close the handler at context close. Default is True.
+
+        Attributes
+        ----------
+        context_count   : int
+            the number of log messages output by this logger
+            this determines whether a block should ever be output
+            to enclose its contents/messages
+
         """
         # obj_idx is set when Multion creates it (it is already set here, this is just a type hint)
 
@@ -61,18 +64,17 @@ class LogContext(ContextDecorator, Multiton):
             self.title   = title
         elif title is True:
             self.title = self.getDefaultTitle()
-        self.level   = level
-        self.handler = handler
-        self.close   = close
-        self.heading = heading
-        if heading is True:
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!yesheading")
+        self.level              = level
+        self.handler            = handler
+        self.close              = close
+        self.heading            = heading
+        self.context_count: int = 0
 
 
     def __enter__(self):
         """ Enter context """
-        local_debug = True
-        if local_debug is True: print(f"_______enter {self.obj_idx}, logger context={self.logger.context} [", end="")
+        local_debug = DEBUG_FLAG.CONTEXT_ENTER
+        if local_debug is True: print(f"_______enter {self.obj_idx}, logger context={GlobalLogContext.status} [", end="")
         if type(self.logger) is not Log:
             raise TypeError("LogContexts logger attribute must be of type Log")
         if self.level is not None:
@@ -83,18 +85,22 @@ class LogContext(ContextDecorator, Multiton):
                 self.logger.addHandler(self.handler)
         if hasattr(self, 'title'):
             self.logger.setTitle(self.title)
-        if type(self.logger.context_obj_current) is not LogContext or (type(self.logger.context_obj_current) is LogContext and self.logger.context_obj_current.obj_idx != self.obj_idx):
-            if local_debug is True: print("setting context_obj_pending to self ", end="")
-            self.logger.context_obj_pending = self
+        if type(GlobalLogContext.context_current) is not LogContext or (type(GlobalLogContext.context_current) is LogContext and GlobalLogContext.context_current.obj_idx != self.obj_idx):
+            if local_debug is True: print("setting context_pending to self ", end="")
+            GlobalLogContext.context_pending = self
+            if type(GlobalLogContext.context_current) is LogContext:
+                GlobalLogContext.status = LogContextStatus.CLOSING
+        if type(GlobalLogContext.context_current) is LogContext and GlobalLogContext.context_current.obj_idx == self.obj_idx and GlobalLogContext.status == LogContextStatus.CLOSING:
+            GlobalLogContext.status = LogContextStatus.CURRENT
         if local_debug is True: print("]")
-        
+
 
     def __exit__(self, typeof, value, traceback):
         """ Exit context, close handlers if present
 
         Set CLOSING context on the logger.
         """
-        local_debug = True
+        local_debug = DEBUG_FLAG.CONTEXT_EXIT
         ## make a callback?
         if local_debug is True: print(f"_______exit {self.title}_______ [ ", end="")
         if type(self.logger) is not Log:
@@ -108,25 +114,25 @@ class LogContext(ContextDecorator, Multiton):
             self.logger.removeHandler(self.handler)
         if self.handler and self.close:
             self.handler.close()
-        if self.logger.context_count > 0:
+        if self.context_count > 0:
             self.logger.setContextStatus(LogContextStatus.CLOSING)
             if local_debug is True: print("context set to CLOSING", end="")
         else:
             if local_debug is True: print(f"no logging messages while under this context {self.title} ", end="")
         if local_debug is True: print("]")
-        self.logger.context_count = 0
+        self.context_count = 0
         # implicit return of None => don't swallow exceptions
 
-    def getDefaultTitle(self) -> str or False:
+    def getDefaultTitle(self) -> Union[str, bool]:
         """ Return default title to use for Heading or Title if they were set to True """
         if self.wrapped_function:
             return f"{self.calling_class}.{self.wrapped_function}"
         else:
             return False
 
-    def getHeading(self) -> str or bool:
+    def getHeading(self) -> Union[str, bool]:
         """ Return heading from one of the sources, False on all fails """
-        print(f"getHeading has been called")
+        if DEBUG_FLAG.CONTEXT_ETC is True: print(f"getHeading has been called")
         if type(self.heading) is str:
             return self.heading
         if type(self.title) is str:
@@ -139,7 +145,7 @@ class LogContext(ContextDecorator, Multiton):
         return inspect.getmodule(inspect.stack()[-1][0]).__name__
 
     @classmethod
-    def getCallingFunction(cls) -> (str, str, str, str):
+    def getCallingFunction(cls) -> Tuple[str, str, str, str]:
         """ Return calling function , which can be used for a default title
 
         Returns
@@ -187,6 +193,9 @@ class LogContext(ContextDecorator, Multiton):
         # return IndexError(f"Invalid types returned from `getCallingFunction()` unable to create id for LogContext")
         import pprint
         return pprint.pformat(inspect.getouterframes(inspect.currentframe(), context=3))
+
+
+
 
 
 

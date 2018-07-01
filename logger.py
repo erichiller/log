@@ -4,7 +4,7 @@ import sys
 import os
 import traceback
 
-from .private import LogContextStatus, QuietFileHandler
+from .private import LogContextStatus, QuietFileHandler, GlobalLogContext, DEBUG_FLAG
 from . import level as Level
 from .default_config import LogConfig as config
 
@@ -26,12 +26,7 @@ class Log(logging.Logger):
 
     def __init__(self, name, level=Level.NOTSET):
         """ Pass name to Logger """
-        self.context: LogContextStatus = False
-        self.context_obj_pending           = None
-        self.context_obj_prior             = None
-        self.context_obj_current                = None
         self.title: str                = None
-        self.context_count: int        = 0          # a count of logs written while under this context
 
         logging.Logger.__init__(self, name, level)
 
@@ -120,17 +115,17 @@ class Log(logging.Logger):
                     level = _level
             filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
             # CLOSE context
-            if self.context == LogContextStatus.CURRENT:
-                self.context_count = self.context_count + 1
-            if self.context == LogContextStatus.CLOSING:
-                # if self.context_obj_current is None:
+            if GlobalLogContext.status == LogContextStatus.CURRENT:
+                GlobalLogContext.context_current.context_count = GlobalLogContext.context_current.context_count + 1
+            if GlobalLogContext.status == LogContextStatus.CLOSING:
+                # if GlobalLogContext.context_current is None:
                 # NOTE:KILLLLLLLLL
                 # print(f" {'>'*40} closing from {self.context} = {LogContextStatus.CLOSING}\nthe message being logged is:\n{msg}")
                 self.logContextStatusClosing()
-                # if self.context_obj_current
-            if self.context_obj_pending is not None and hasattr(self.context_obj_pending, 'obj_idx'):
-                self.setContextStatus(LogContextStatus.OPENING, self.context_obj_pending)
-                self.context_obj_pending = None
+                # if GlobalLogContext.context_current
+            if GlobalLogContext.context_pending is not None and hasattr(GlobalLogContext.context_pending, 'obj_idx'):
+                self.setContextStatus(LogContextStatus.OPENING, GlobalLogContext.context_pending)
+                GlobalLogContext.context_pending = None
 
             # if the title was set from setTitle
             if self.title:
@@ -196,35 +191,38 @@ class Log(logging.Logger):
         # print(f"setContextStatus status was {self.context} and is being set to {context}")
         # push closing context if required
         if context == LogContextStatus.OPENING:
-            self.context_obj_current = newcontext_obj
+            GlobalLogContext.context_current = newcontext_obj
             self.logContextStatusOpening()
         else:
-            self.context = context
+            GlobalLogContext.status = context
 
     def logContextStatusOpening(self):
         """ Post Logs """
-        if self.context_obj_current.heading is not False:
-            context_msg_level = self.context_obj_current.level if type(self.context_obj_current.level) is int else logging.INFO
-            # print(f"{'8'*40} log Opening independently @ level={context_msg_level} {'8'*40}")
-            logging.Logger.log(self, int(context_msg_level), None, {'context': LogContextStatus.OPENING, 'heading': self.context_obj_current.getHeading() } )
-        self.context = LogContextStatus.CURRENT
-        self.context_count = self.context_count + 1
+        if GlobalLogContext.context_current.heading is not False:
+            context_msg_level = GlobalLogContext.context_current.level if type(GlobalLogContext.context_current.level) is int else logging.INFO
+            if DEBUG_FLAG.LOGGER_CONTEXT_OPENING is True: print(f"{'@'*20} logger.logContextStatusOpening @ level={context_msg_level} {'@'*20}")
+            logging.Logger.log(self, int(context_msg_level), None, {'context': LogContextStatus.OPENING, 'heading': GlobalLogContext.context_current.getHeading() } )
+        GlobalLogContext.status = LogContextStatus.CURRENT
+        GlobalLogContext.context_current.context_count = GlobalLogContext.context_current.context_count + 1
         # print("end of logContextStatusOpening()")
 
     def logContextStatusClosing(self):
         """ Post Logs """
-        if self.context_obj_current.heading is not False:
-            # context_exit_level = self.context_obj_prior.level if hasattr(self.context_obj_prior, 'level') and type(self.context_obj_prior.level) is int else logging.INFO
-            context_exit_level = self.context_obj_current.level if hasattr(self.context_obj_current, 'level') and type(self.context_obj_current.level) is int else logging.INFO
-            print(f"{'8'*40} log Closing independently @ level={context_exit_level} [{self.level}] {'8'*40}")
+        # if hasattr(GlobalLogContext.context_pending, "obj_idx") and GlobalLogContext.context_pending.obj_idx == GlobalLogContext.context_current.obj_idx:
+        #     GlobalLogContext.context_pending = None
+        #     GlobalLogContext.status = LogContextStatus.CURRENT
+        if GlobalLogContext.context_current.heading is not False:
+            # context_exit_level = GlobalLogContext.context_prior.level if hasattr(GlobalLogContext.context_prior, 'level') and type(GlobalLogContext.context_prior.level) is int else logging.INFO
+            context_exit_level = GlobalLogContext.context_current.level if hasattr(GlobalLogContext.context_current, 'level') and type(GlobalLogContext.context_current.level) is int else logging.INFO
+            if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing @ level={context_exit_level}(prior level), new level={self.level} {'@'*20}")
             save_level = self.level
             self.level = context_exit_level
             logging.Logger.log(self, int(context_exit_level), None, {'context': LogContextStatus.CLOSING} )
             self.level = save_level
-        print(f"{'8'*40} log Closing independently - context set to NOCONTEXT")
-        self.context = LogContextStatus.NOCONTEXT
-        self.context_obj_prior   = self.context_obj_current
-        self.context_obj_current = None
+        if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing - context set to NOCONTEXT")
+        GlobalLogContext.status = LogContextStatus.NOCONTEXT
+        GlobalLogContext.context_prior   = GlobalLogContext.context_current
+        GlobalLogContext.context_current = None
 
 
     def setTitle(self, title):

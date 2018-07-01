@@ -2,7 +2,6 @@
 
 from enum import Enum, unique
 from logging import FileHandler
-from lib.common import Singleton
 
 
 @unique
@@ -15,7 +14,7 @@ class LogContextStatus(Enum):
     NOCONTEXT = False
 
 
-class LogContextGlobalState(Singleton):
+class GlobalLogContext:
     """ Stores the global state of loggers
 
     Stores state globally to allow state persistence
@@ -33,10 +32,6 @@ class LogContextGlobalState(Singleton):
         Active LogContext object
     context_pending : LogContext
         Context which will be active with the next log message
-    context_count   : int
-        the number of log messages output by this logger
-        this determines whether a block should ever be output
-        to enclose its contents/messages
 
     """
 
@@ -44,7 +39,7 @@ class LogContextGlobalState(Singleton):
     context_prior               = None
     context_current             = None
     context_pending             = None
-    context_count: int          = 0
+
 
 
 
@@ -54,3 +49,15 @@ class QuietFileHandler(FileHandler):
     def handleError(self, record):
         """ Remove all action """
         pass
+
+
+class DEBUG_FLAG:
+    """ Container for module level debug flags """
+
+    __MASTER = False
+    LOGGER_CONTEXT_CLOSING = __MASTER
+    LOGGER_CONTEXT_OPENING = __MASTER
+    CONTEXT_EXIT           = __MASTER
+    CONTEXT_ENTER          = __MASTER
+    CONTEXT_ETC            = __MASTER
+
