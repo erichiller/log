@@ -115,7 +115,7 @@ class Log(logging.Logger):
                     level = _level
             filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
             # CLOSE context
-            if GlobalLogContext.status == LogContextStatus.CURRENT:
+            if GlobalLogContext.status == LogContextStatus.CURRENT and hasattr(GlobalLogContext.context_current, "context_count"):
                 GlobalLogContext.context_current.context_count = GlobalLogContext.context_current.context_count + 1
             if GlobalLogContext.status == LogContextStatus.CLOSING:
                 # if GlobalLogContext.context_current is None:

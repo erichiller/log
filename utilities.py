@@ -3,6 +3,7 @@ import logging
 import copy
 import sys
 import os
+from typing import Dict, cast
 
 from .formatter import DynamicLogFormatter
 from .handler import ElasticLogHandler
@@ -16,7 +17,7 @@ from ..common import get_make_path
 
 def getLogger(name=None) -> Log:
     """ Re-export getLogger """
-    return logging.getLogger(name)
+    return cast(Log, logging.getLogger(name))
 
 
 
@@ -35,7 +36,7 @@ prompt_continue = getLogger(config.DEFAULT_LOGGER_NAME).prompt_continue
 def display_level_status(logger: logging.Logger):
     """ Visually print enabled levels """
     for level in (Level.TRACE, Level.DEBUG, Level.INFO, Level.NOTICE, Level.WARNING, Level.CRITICAL):
-        logger.log(f"log messages of level {level} are enabled", level=level, location=True)
+        logger.log(msg=f"log messages of level {level} are enabled", level=level, location=True)
 
 
 
@@ -62,7 +63,7 @@ def progress(complete, total, char_width=DynamicLogFormatter.context_marker_widt
 
 
 
-def getAllLoggers() -> {Log}:
+def getAllLoggers() -> Dict[str, Log]:
     """ Retrieve list of all loggers present """
     # log = getLogger(__name__).log
     # for (k, v) in logging.Logger.manager.loggerDict.items():

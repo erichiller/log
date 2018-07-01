@@ -2,6 +2,8 @@
 
 from enum import Enum, unique
 from logging import FileHandler
+from .context import LogContext
+from typing import Optional
 
 
 @unique
@@ -35,10 +37,10 @@ class GlobalLogContext:
 
     """
 
-    status: LogContextStatus    = LogContextStatus.NOCONTEXT
-    context_prior               = None
-    context_current             = None
-    context_pending             = None
+    status: LogContextStatus              = LogContextStatus.NOCONTEXT
+    context_prior: Optional[LogContext]   = None
+    context_current: Optional[LogContext] = None
+    context_pending: Optional[LogContext] = None
 
 
 
