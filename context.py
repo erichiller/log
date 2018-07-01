@@ -3,9 +3,17 @@ import logging
 from types import MethodType
 import inspect
 
-from lib.common import ContextDecorator, Multiton
+from lib.common import ContextDecorator, Multiton, Singleton
 from .private import LogContextStatus
 from .logger import Log
+
+
+class GlobalLogContext(Singleton):
+    """ Track global state of log output """
+
+    def __init__(self):
+        
+
 
 
 class LogContext(ContextDecorator, Multiton):
