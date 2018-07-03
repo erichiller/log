@@ -2,8 +2,6 @@
 
 from enum import Enum, unique
 from logging import FileHandler
-from .context import LogContext
-from typing import Optional
 
 
 @unique
@@ -14,35 +12,6 @@ class LogContextStatus(Enum):
     CURRENT   = 2
     CLOSING   = 3
     NOCONTEXT = False
-
-
-class GlobalLogContext:
-    """ Stores the global state of loggers
-
-    Stores state globally to allow state persistence
-    as log activity passes from logger to logger depending on code
-    location and activities
-
-    Attributes
-    ----------
-    status          : LogContextStatus
-        Current global state of loggers
-    context_prior   : LogContext
-        Previous LogContext object, used to
-        close out activity once the first message of a new context begins
-    context_current : LogContext
-        Active LogContext object
-    context_pending : LogContext
-        Context which will be active with the next log message
-
-    """
-
-    status: LogContextStatus              = LogContextStatus.NOCONTEXT
-    context_prior: Optional[LogContext]   = None
-    context_current: Optional[LogContext] = None
-    context_pending: Optional[LogContext] = None
-
-
 
 
 class QuietFileHandler(FileHandler):

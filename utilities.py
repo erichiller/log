@@ -5,14 +5,10 @@ import sys
 import os
 from typing import Dict, cast
 
-from .formatter import DynamicLogFormatter
-from .handler import ElasticLogHandler
-from . import level as Level
-from .logger import Log
-from .context import LogContext
+from lib.log import Log, LogContext, Level, ElasticLogHandler, DynamicLogFormatter
 from .default_config import LogConfig as config
 from .private import QuietFileHandler
-from ..common import get_make_path
+from lib.common import get_make_path
 
 
 def getLogger(name=None) -> Log:

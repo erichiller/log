@@ -13,64 +13,61 @@ NOTSET	    0
 
 import logging
 
-# registry for levels created
-_level_dict = {}
 
 
-class _LevelInt(int):
-    """ Extend int for level """
+class Level(int):
+    """ desc for levelEnum is here
+
+    Attributes
+    ----------
+    NOTSET   : int(0)
+        All messages are logged
+    TRACE    : int(5)
+        Very high logging level, most verbose messages
+        Meant to trace atomic program activities
+    DEBUG    : int(10)
+        Detailed information to debug program functionality
+    INFO     : int()
+        General information for the user
+    NOTICE   : int()
+        Elevated information for the user
+    WARNING  : int()
+        Warn about non-severe but concerning issue
+    ERROR    : int()
+        Severe issue has occurred
+    CRITICAL : int()
+        Critical, system affecting issue
+
+    """
+
+    # registry for levels created
+    _level_dict = {}
 
     ID = None
 
-    def __new__(cls, ID):
-        cls.ID = ID
-        # trace(f"add level name={cls.__name__} ID={ID}")
-        logging.addLevelName(cls.__name__, cls.ID)
-        _level_dict.update({cls.ID: cls.__name__})
+    def __new__(cls, id_name):
+        """ Create Level with int as base """
+        cls.ID = getattr(cls, id_name)
+        # print(f"add level name={id_name} ID={cls.ID}")
+        logging.addLevelName(id_name, cls.ID)
+        cls._level_dict.update({cls.ID: id_name})
         return super().__new__(cls, cls.ID)
 
-
-class NOTSET(_LevelInt):
-    """ Default level if nothing is configured, this will log ALL messages """
-
-
-class TRACE(_LevelInt):
-    """ Incredibly detailed level, report fine actions taken by program """
-
-
-class DEBUG(_LevelInt):
-    """ Detailed information for the user """
+    NOTSET   = logging.NOTSET
+    TRACE    = logging.DEBUG - 5
+    DEBUG    = logging.DEBUG
+    INFO     = logging.INFO
+    NOTICE   = logging.INFO + 5
+    WARNING  = logging.WARNING
+    ERROR    = logging.ERROR
+    CRITICAL = logging.CRITICAL
 
 
-class INFO(_LevelInt):
-    """ General information for the user """
-
-
-class NOTICE(_LevelInt):
-    """ Elevated information for the user """
-
-
-class WARNING(_LevelInt):
-    """ Warn about non-severe but concerning issue """
-
-
-class ERROR(_LevelInt):
-    """ Severe issue has occurred """
-
-
-class CRITICAL(_LevelInt):
-    """ Critical, system affecting issue """
-
-
-NOTSET     = NOTSET(logging.NOTSET)
-TRACE      = TRACE(logging.DEBUG - 5)
-DEBUG      = DEBUG(logging.DEBUG)
-INFO       = INFO(logging.INFO)
-NOTICE     = NOTICE(logging.INFO + 5)
-WARNING    = WARNING(logging.WARNING)
-ERROR      = ERROR(logging.ERROR)
-CRITICAL   = CRITICAL(logging.CRITICAL)
-
-
-
-
+NOTSET     = Level("NOTSET")
+TRACE      = Level("TRACE")
+DEBUG      = Level("DEBUG")
+INFO       = Level("INFO")
+NOTICE     = Level("NOTICE")
+WARNING    = Level("WARNING")
+ERROR      = Level("ERROR")
+CRITICAL   = Level("CRITICAL")

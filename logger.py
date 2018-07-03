@@ -4,8 +4,8 @@ import sys
 import os
 import traceback
 
-from .private import LogContextStatus, QuietFileHandler, GlobalLogContext, DEBUG_FLAG
-from . import level as Level
+from .private import LogContextStatus, QuietFileHandler, DEBUG_FLAG
+from lib.log import Level, GlobalLogContext
 from .default_config import LogConfig as config
 
 
@@ -18,6 +18,7 @@ elif __file__[-4:].lower() in ['.pyc', '.pyo']:
 else:
     _srcfile = __file__
 _srcfile = os.path.normcase(_srcfile)
+
 
 
 
@@ -214,10 +215,10 @@ class Log(logging.Logger):
         if GlobalLogContext.context_current.heading is not False:
             # context_exit_level = GlobalLogContext.context_prior.level if hasattr(GlobalLogContext.context_prior, 'level') and type(GlobalLogContext.context_prior.level) is int else logging.INFO
             context_exit_level = GlobalLogContext.context_current.level if hasattr(GlobalLogContext.context_current, 'level') and type(GlobalLogContext.context_current.level) is int else logging.INFO
-            if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing @ level={context_exit_level}(prior level), new level={self.level} {'@'*20}")
+            if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing({GlobalLogContext.context_current.getHeading()}) @ level={context_exit_level}(prior level), new level={self.level} {'@'*20}")
             save_level = self.level
             self.level = context_exit_level
-            logging.Logger.log(self, int(context_exit_level), None, {'context': LogContextStatus.CLOSING} )
+            logging.Logger.log(self, int(context_exit_level), None, {'context': LogContextStatus.CLOSING, 'heading': GlobalLogContext.context_current.getHeading()} )
             self.level = save_level
         if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing - context set to NOCONTEXT")
         GlobalLogContext.status = LogContextStatus.NOCONTEXT

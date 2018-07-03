@@ -1,12 +1,11 @@
 """ Defines logging.LogContext """
 import logging
 from types import MethodType
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 import inspect
 
 from lib.common import ContextDecorator, Multiton
-from .private import LogContextStatus, GlobalLogContext, DEBUG_FLAG
-from .logger import Log
+from .private import LogContextStatus, DEBUG_FLAG
 
 
 
@@ -16,7 +15,7 @@ class LogContext(ContextDecorator, Multiton):
 
     _instances: dict = {}
 
-    def __init__(self, logger: Log = None, title: Union[str, bool, None] = None, heading: Union[str, bool] = True, level: int = None, handler: logging.Handler = None, close: bool = True):
+    def __init__(self, logger: logging.Logger = None, title: Union[str, bool, None] = None, heading: Union[str, bool] = True, level: int = None, handler: logging.Handler = None, close: bool = True):
         """ Initialize LogContext, allows passing of alternate parameters
 
         Parameters
@@ -52,11 +51,11 @@ class LogContext(ContextDecorator, Multiton):
 
         self.obj_idx: str
         if type(logger) is MethodType:
-            self.logger: Log  = logger.__self__
+            self.logger  = logger.__self__  # type: Log
         elif isinstance(logger, logging.Logger):
-            self.logger: Log  = logger
+            self.logger  = logger  # type: Log
         else:
-            self.logger: Log  = logging.getLogger(self.getCallingModule())
+            self.logger  = logging.getLogger(self.getCallingModule())  # type: Log
         self.calling_class, self.wrapped_function, _, _ = LogContext.getCallingFunction()
         if title is None:
             self.title = None
@@ -75,8 +74,9 @@ class LogContext(ContextDecorator, Multiton):
         """ Enter context """
         local_debug = DEBUG_FLAG.CONTEXT_ENTER
         if local_debug is True: print(f"_______enter {self.obj_idx}, logger context={GlobalLogContext.status} [", end="")
-        if type(self.logger) is not Log:
-            raise TypeError("LogContexts logger attribute must be of type Log")
+        # test for valid Logger type
+        if not hasattr(self.logger, "trace"):
+            raise TypeError("LogContext's logger attribute must be of type Log")
         if self.level is not None:
             self.old_level = self.logger.level
             self.logger.setLevel(self.level)
@@ -103,7 +103,7 @@ class LogContext(ContextDecorator, Multiton):
         local_debug = DEBUG_FLAG.CONTEXT_EXIT
         ## make a callback?
         if local_debug is True: print(f"_______exit {self.title}_______ [ ", end="")
-        if type(self.logger) is not Log:
+        if not hasattr(self.logger, "trace"):
             raise TypeError("LogContext logger attribute must be of type Log")
         if self.level is not None:
             self.logger.setLevel(self.old_level)
@@ -156,32 +156,37 @@ class LogContext(ContextDecorator, Multiton):
         wrapped_function_lineno : string    - the line number the wrapped function is defined on
 
         """
-        # curframe = inspect.currentframe()
         #NOTE: use line func file to "ID" for @LogSingle
-        #NOTE: add a new contect of Logging(False) -> which is this just with level=CRTITICAL
-        #NOTE: stack contexts if they are the same, do not keep printing >>>> START <<<< if same consecutie
-        #NOTE: I _believe_ that the closing context is tacked to the next log message
-        #           ... end this with an explicit log() call
-        #           when the formatter detects LogClosingContext and a message of None
-        #           ... then it just returns the Context marker.
-        #NOTE: something something code context
-        # calframe = inspect.getouterframes(curframe, 2)
-        # print(f"calling function={calframe[-1]}")
-        # print(f"calling function={calframe[-1]}")
+        #NOTE: add a new context of Logging(False) -> which is this just with level=CRTITICAL
+        MAX_SEARCH_DEPTH = 5  # starts at 2, 5 means it will skip 0, 1; check 2-5
         outerframes = inspect.getouterframes(inspect.currentframe(), context=3)
-        calling_class = outerframes[-2].function
         try:
             import re
-            wrapped_function = re.search("def\s*(\w*)\s*\(", outerframes[-2].code_context[-1] )
-            if wrapped_function is not None:
-                wrapped_function = wrapped_function.group(1)
-                wrapped_function_lineno = outerframes[-2].lineno + 1
-                calling_filename = outerframes[-2].filename
-            else:
-                raise AssertionError(f"The search string was not found in {wrapped_function}")
-        except (TypeError, AssertionError):
+            # from pprint import pprint #NOTE:KILL
+            for depth in range(2, MAX_SEARCH_DEPTH):
+                if len(outerframes) <= depth and hasattr(outerframes[depth], "code_context") and len(outerframes[depth].code_context) > 0:
+                    # array is not long enough, get out
+                    break
+                wrapped_function = re.search("def\s*(\w*)\s*\(", outerframes[depth].code_context[-1] )
+                if wrapped_function is not None:
+                    wrapped_function = wrapped_function.group(1)
+                    wrapped_function_lineno = outerframes[depth].lineno + 1
+                    calling_filename = outerframes[depth].filename
+                    calling_class = outerframes[depth].function
+                    return calling_class, wrapped_function, calling_filename, wrapped_function_lineno
+                # print(f"{'&'*70}")
+                # pprint(outerframes, indent=2)
+                # input("Press Enter to continue...")
+                # pprint(outerframes[depth].code_context[-1])
+            raise AssertionError(f"The search string was not found in {wrapped_function}")
+        except (TypeError, AssertionError) as e:
+            # from pprint import pprint
+            # from traceback import print_tb
+            # print(f"{'!'*70} -> {e}")
+            # print_tb(e.__traceback__)
+            # pprint(outerframes, indent=2)
+            # input("Press Enter to continue...")
             return False, False, False, False
-        return calling_class, wrapped_function, calling_filename, wrapped_function_lineno
 
 
     @classmethod
@@ -196,6 +201,35 @@ class LogContext(ContextDecorator, Multiton):
 
 
 
+
+
+
+
+class GlobalLogContext:
+    """ Stores the global state of loggers
+
+    Stores state globally to allow state persistence
+    as log activity passes from logger to logger depending on code
+    location and activities
+
+    Attributes
+    ----------
+    status          : LogContextStatus
+        Current global state of loggers
+    context_prior   : LogContext
+        Previous LogContext object, used to
+        close out activity once the first message of a new context begins
+    context_current : LogContext
+        Active LogContext object
+    context_pending : LogContext
+        Context which will be active with the next log message
+
+    """
+
+    status: LogContextStatus              = LogContextStatus.NOCONTEXT
+    context_prior: Optional[LogContext]   = None
+    context_current: Optional[LogContext] = None
+    context_pending: Optional[LogContext] = None
 
 
 

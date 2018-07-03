@@ -15,18 +15,16 @@ https://docs.python.org/3/howto/logging.html#useful-handlers
 """
 
 
+from lib.log.handler import ElasticLogHandler
+from lib.log.level import TRACE, DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, Level
+from lib.log.context import LogContext, GlobalLogContext
+from lib.log.logger import Log
+from lib.log.formatter import DynamicLogFormatter
+from lib.log.utilities import getLogger, progress, prompt_continue
 
-from .logger import Log
-from .context import LogContext
-from .formatter import DynamicLogFormatter
-from .utilities import getLogger, progress, prompt_continue
-
-from .level import TRACE, DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL
-
-from . import level as Level
 
 __all__ = [
-    "DynamicLogFormatter", "ElasticLogHandler", "LogContext", "Log",
+    "DynamicLogFormatter", "ElasticLogHandler", "LogContext", "Log", "GlobalLogContext",
     "getLogger", "progress", "prompt_continue",
     "TRACE", "DEBUG", "INFO", "NOTICE", "WARNING", "ERROR", "CRITICAL",
     "Level"
@@ -34,3 +32,4 @@ __all__ = [
 
 # test imports with:
 # python3 -c 'from pprint import pprint; import lib.log; pprint(lib.log.__dict__)'
+

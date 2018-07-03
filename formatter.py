@@ -31,7 +31,7 @@ import logging
 from lib.common import property_lazy_static
 
 from .private import LogContextStatus
-from . import level as Level
+from lib.log import Level
 from .default_config import LogConfig as config
 
 
@@ -218,7 +218,7 @@ class DynamicLogFormatter(logging.Formatter):
                 closing = heading = False
             elif context == LogContextStatus.CLOSING:
                 closing = heading = False
-                context_marker = self.COLOR_CONTEXT_MARKER + " END ".center(self.context_marker_width, "<") + f"{clear}"
+                context_marker = self.COLOR_CONTEXT_MARKER + f" END {title} ".center(self.context_marker_width, "<") + f"{clear}"
             if record.msg is None:
                 return context_marker
 
@@ -226,7 +226,7 @@ class DynamicLogFormatter(logging.Formatter):
             title = f" {record.args['title']} {title}"
         if closing:
             output = ( f"{output}" + "\n" +                                   # add an END OF BLOCK marker
-                       " END ".center(self.column_name_width, "<") )
+                       f" END {title} ".center(self.column_name_width, "<") )
         if heading is not False:                                              # this has been marked as a heading so give it some flourish
             title = title.center(self.column_name_width - len(prepend), '>' ) + "\n"
 
