@@ -110,6 +110,11 @@ class DynamicLogFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """ Format message Object (via attributes of LogRecord) of unknown type into printable and easily readable string
 
+        ----
+        msg : varied....
+            actual output, could be object, string
+        heading : title is gerated from this
+
         https://docs.python.org/3/library/logging.html#logging.LogRecord
         https://docs.python.org/3/library/logging.html#logrecord-attributes
         NOTE: record.getMessage() will ALWAYS return a str()
@@ -142,6 +147,7 @@ class DynamicLogFormatter(logging.Formatter):
             if isinstance( output, str ):
                 pass
             elif table:
+                # if table and title, set title to heading
                 iterate_source = output
                 output = str()
                 if isinstance(iterate_source, dict):
@@ -227,7 +233,9 @@ class DynamicLogFormatter(logging.Formatter):
         if closing:
             output = ( f"{output}" + "\n" +                                   # add an END OF BLOCK marker
                        f" END {title} ".center(self.column_name_width, "<") )
-        if heading is not False:                                              # this has been marked as a heading so give it some flourish
+        if heading is not False or table is not False:                                              # this has been marked as a heading so give it some flourish
+            if len(title) == 1 and table is True:
+                title = " Table "
             title = title.center(self.column_name_width - len(prepend), '>' ) + "\n"
 
         # determine color level, Python has no switch statement
