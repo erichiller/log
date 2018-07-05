@@ -145,7 +145,7 @@ class DynamicLogFormatter(logging.Formatter):
 
         try:
             if isinstance( output, str ):
-                pass
+                pass    # not a table; this is a string, no further processing
             elif table:
                 # if table and title, set title to heading
                 iterate_source = output
@@ -209,7 +209,7 @@ class DynamicLogFormatter(logging.Formatter):
             m = f"{int(s // 60 % 60):0>2}m" if s >= 60 else ""
             h = str(int(s // 3600)) + "h" if s >= 3600 else ""
             s = str(int(s % 60)) + "s"
-            prependtime = f"[{h:>4} {m} {s:0>3}] "
+            prependtime = f"[{h:>4} {m:>3} {s:0>3}] "
 
         """ handle context """
         if context:
@@ -234,9 +234,11 @@ class DynamicLogFormatter(logging.Formatter):
             output = ( f"{output}" + "\n" +                                   # add an END OF BLOCK marker
                        f" END {title} ".center(self.column_name_width, "<") )
         if heading is not False or table is not False:                                              # this has been marked as a heading so give it some flourish
-            if len(title) == 1 and table is True:
+            if len(title) in (0, 1, 2) and table is True:
                 title = " Table "
-            title = title.center(self.column_name_width - len(prepend), '>' ) + "\n"
+            title = (title if len(title) > 0 and title[0] == " " else (
+                     f" {title} " if len(title.strip()) > 0 else ""
+                     ) ).center(self.column_name_width - len(prepend), '>' ) + "\n"
 
         # determine color level, Python has no switch statement
         if record.levelno >= Level.CRITICAL:                                    # set color
