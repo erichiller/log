@@ -152,6 +152,8 @@ class DynamicLogFormatter(logging.Formatter):
                 output = str()
                 if isinstance(iterate_source, dict):
                     iterate_source = iterate_source.items()
+                if isinstance(iterate_source, list):
+                    iterate_source = { k: v for k, v in enumerate(iterate_source) }.items()
                 try:
                     iterate_source = iter(iterate_source)
                     for d in iterate_source:
@@ -328,8 +330,8 @@ class DynamicLogFormatter(logging.Formatter):
 
     def make_row(self, *args)-> str:
         """ Take unlimited arguments and writes the first one as a `title` column, and alternating ones thereafter to columns of ` title | value | title | value .... ` """
-        if isinstance(args[0], str):
-            return args[0].ljust(self.column_name_width) + ": " + "".join(map(str, args[1:])) + "\n"
+        if len(args) > 1 and (isinstance(args[0], str) or isinstance(args[0], int)):
+            return str(args[0]).ljust(self.column_name_width) + ": " + "".join(map(str, args[1:])) + "\n"
         elif isinstance(args[0], dict) and len(args) == 1:
             return self.make_row(**args[0])
         elif isinstance(repr(args[0]), str):
