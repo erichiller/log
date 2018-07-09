@@ -3,7 +3,7 @@ import logging
 import copy
 import sys
 import os
-from typing import Dict, cast
+from typing import Dict, cast, Union
 
 from lib.log import Log, LogContext, Level, ElasticLogHandler, DynamicLogFormatter
 from .default_config import LogConfig as config
@@ -133,17 +133,17 @@ def configure_logging(log_file_path: str, log_console_level: int, elastic_log_ho
 
 
 
-def _log_console_level(level: int=None, set_handler_type=logging.StreamHandler) -> int:
+def _log_console_level(level: Union[int, Level]=None, set_handler_type=logging.StreamHandler) -> Level:
     """ Log level for Root Console """
     if isinstance(level, int ):
         for handler in getLogger().handlers:
             if type(handler) == set_handler_type:
-                log(f"setting handler type{set_handler_type.__name__} to level {level}", log.TRACE)
+                log(f"setting handler type{set_handler_type.__name__} to level {level}", Level.TRACE)
                 handler.setLevel(level)
-        log(f"Log level is now {getLogger().handlers[0].level}, root logger is at level {getLogger().level}", log.DEBUG)
+        log(f"Log level is now {getLogger().handlers[0].level}, root logger is at level {getLogger().level}", Level.DEBUG)
     elif level is not None:
         raise TypeError("level must be of type int")
-    return getLogger().handlers[0].level
+    return Level(getLogger().handlers[0].level)
 
 
 

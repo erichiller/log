@@ -12,6 +12,7 @@ NOTSET	    0
 """
 
 import logging
+from typing import cast, Union, Optional
 
 
 
@@ -41,17 +42,23 @@ class Level(int):
     """
 
     # registry for levels created
-    _level_dict = {}
+    _level_dict: dict = {}
 
-    ID = None
+    ID: Optional[int] = None
 
-    def __new__(cls, id_name):
+    def __new__(cls, id_name: Union[int, str]):
         """ Create Level with int as base """
-        cls.ID = getattr(cls, id_name)
+        if type(id_name) is str:
+            cls.ID = getattr(cls, cast(str, id_name))
         # print(f"add level name={id_name} ID={cls.ID}")
-        logging.addLevelName(id_name, cls.ID)
-        cls._level_dict.update({cls.ID: id_name})
+            logging.addLevelName( cls.ID, cast(str, id_name) )
+            cls._level_dict.update({cls.ID: cast(str, id_name)})
+        elif type(id_name) is int:
+            cls.ID = cast(int, id_name)
+        else:
+            TypeError("Level can only be created with a str, or an int (matching one of the present Levels)")
         return super().__new__(cls, cls.ID)
+
 
     NOTSET   = logging.NOTSET
     TRACE    = logging.DEBUG - 5

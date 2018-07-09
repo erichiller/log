@@ -28,7 +28,7 @@ import os
 import traceback
 import logging
 
-from lib.common import property_lazy_static
+from lib.common import property_lazy_class
 
 from .private import LogContextStatus
 from lib.log import Level
@@ -91,7 +91,7 @@ class DynamicLogFormatter(logging.Formatter):
 
     COLOR_DEFAULT            = ANSI_CYAN
 
-    def __init__(self, color: bool = False):
+    def __init__(self, color: bool = False) -> None:
         """ Init Formatter, provide color=True if ANSI color output is desired
 
         NOTE: this does not honor the standard Formatter interface: https://docs.python.org/3/howto/logging.html#formatters
@@ -101,7 +101,7 @@ class DynamicLogFormatter(logging.Formatter):
         self.clear = DynamicLogFormatter.ANSI_CLEAR if color is True else ""
         self.eol   = DynamicLogFormatter.ANSI_CLEOL if color is True else ""
 
-    @property_lazy_static
+    @property_lazy_class
     def local_module_base(cls) -> str:
         """ Guess what the local module base path is for cancelling out unnecassry prints """
         # going to be simplistic and just do up 2 levels.

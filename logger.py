@@ -3,6 +3,7 @@ import logging
 import sys
 import os
 import traceback
+from typing import Optional
 
 from .private import LogContextStatus, QuietFileHandler, DEBUG_FLAG
 from lib.log import Level, GlobalLogContext
@@ -99,7 +100,7 @@ class Log(logging.Logger):
         """
         self.log(msg=msg, level=logging.WARNING, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def log(self, level=logging.INFO, msg=None, title: str=None, heading: bool=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
+    def log(self, level=logging.INFO, msg=None, title: Optional[str]=None, heading: Optional[bool]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
         """ Define Custom logger with additional arguments.
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
@@ -212,7 +213,7 @@ class Log(logging.Logger):
         # if hasattr(GlobalLogContext.context_pending, "obj_idx") and GlobalLogContext.context_pending.obj_idx == GlobalLogContext.context_current.obj_idx:
         #     GlobalLogContext.context_pending = None
         #     GlobalLogContext.status = LogContextStatus.CURRENT
-        if GlobalLogContext.context_current.heading is not False:
+        if hasattr(GlobalLogContext.context_current, "heading") and GlobalLogContext.context_current.heading is not False:
             # context_exit_level = GlobalLogContext.context_prior.level if hasattr(GlobalLogContext.context_prior, 'level') and type(GlobalLogContext.context_prior.level) is int else logging.INFO
             context_exit_level = GlobalLogContext.context_current.level if hasattr(GlobalLogContext.context_current, 'level') and type(GlobalLogContext.context_current.level) is int else logging.INFO
             if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing({GlobalLogContext.context_current.getHeading()}) @ level={context_exit_level}(prior level), new level={self.level} {'@'*20}")
