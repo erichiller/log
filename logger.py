@@ -3,7 +3,7 @@ import logging
 import sys
 import os
 import traceback
-from typing import Optional
+from typing import Optional, Union
 
 from .private import LogContextStatus, QuietFileHandler, DEBUG_FLAG
 from lib.log import Level, GlobalLogContext
@@ -58,49 +58,49 @@ class Log(logging.Logger):
         return False
 
 
-    def trace(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
+    def trace(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
         """ Incredibly detailed level, report fine actions taken by program
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
         self.log(msg=msg, level=Level.TRACE, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def debug(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
+    def debug(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
         """ Detailed information for the user
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
         self.log(msg=msg, level=Level.DEBUG, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info, *args, **kwargs)
 
-    def info(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
+    def info(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
         """ General information for the user
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
         self.log(msg=msg, level=logging.INFO, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def notice(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
+    def notice(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
         """ Elevated information for the user
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
         self.log(msg=msg, level=Level.NOTICE, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def error(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
+    def error(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
         """ Severe issue has occurred
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
         self.log(msg=msg, level=logging.ERROR, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def warning(self, msg, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
+    def warning(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
         """ Warn about non-severe but concerning issue
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
         self.log(msg=msg, level=logging.WARNING, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def log(self, level=logging.INFO, msg=None, title: Optional[str]=None, heading: Optional[bool]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
+    def log(self, level=logging.INFO, msg=None, title: Optional[str]=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
         """ Define Custom logger with additional arguments.
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
@@ -157,11 +157,11 @@ class Log(logging.Logger):
             from traceback import print_tb
             print(f"an error occurred whilst logging, printing to stdout instead. \nerror: {e}\nArguments:\n----------\n{print_tb(e.__traceback__)}\n{sys.exc_info()}\n\n")
 
-    def exception(self, e: Exception, msg: str=None, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=True):
+    def exception(self, e: Exception, msg: str=None, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=True):
         """ Exception has occurred, report """
         self.log(msg=msg, level=logging.ERROR, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
-    def critical(self, msg: str=None, title: str=None, heading: bool=False, table: bool=False, relatime: bool=True, location: bool=False, exc_info=True):
+    def critical(self, msg: str=None, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=True):
         """ Exception has occurred, critical severity """
         self.log(msg=msg, level=logging.CRITICAL, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
 
@@ -201,9 +201,9 @@ class Log(logging.Logger):
     def logContextStatusOpening(self):
         """ Post Logs """
         if GlobalLogContext.context_current.heading is not False:
-            context_msg_level = GlobalLogContext.context_current.level if type(GlobalLogContext.context_current.level) is int else logging.INFO
-            if DEBUG_FLAG.LOGGER_CONTEXT_OPENING is True: print(f"{'@'*20} logger.logContextStatusOpening @ level={context_msg_level} {'@'*20}")
-            logging.Logger.log(self, int(context_msg_level), None, {'context': LogContextStatus.OPENING, 'heading': GlobalLogContext.context_current.getHeading() } )
+            context_msg_level = GlobalLogContext.context_current.heading_level if type(GlobalLogContext.context_current.heading_level) is int else logging.INFO
+            if DEBUG_FLAG.LOGGER_CONTEXT_OPENING is True: print(f"{'@'*20} logger.logContextStatusOpening @ context msg level={context_msg_level} {'@'*20}")
+            logging.Logger.log(self, int(context_msg_level), None, {'context': LogContextStatus.OPENING, 'heading': f"{GlobalLogContext.context_current.getHeading()}" } )
         GlobalLogContext.status = LogContextStatus.CURRENT
         GlobalLogContext.context_current.context_count = GlobalLogContext.context_current.context_count + 1
         # print("end of logContextStatusOpening()")
@@ -219,7 +219,7 @@ class Log(logging.Logger):
             if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing({GlobalLogContext.context_current.getHeading()}) @ level={context_exit_level}(prior level), new level={self.level} {'@'*20}")
             save_level = self.level
             self.level = context_exit_level
-            logging.Logger.log(self, int(context_exit_level), None, {'context': LogContextStatus.CLOSING, 'heading': GlobalLogContext.context_current.getHeading()} )
+            logging.Logger.log(self, int(GlobalLogContext.context_current.heading_level), None, {'context': LogContextStatus.CLOSING, 'heading': GlobalLogContext.context_current.getHeading()} )
             self.level = save_level
         if DEBUG_FLAG.LOGGER_CONTEXT_CLOSING is True: print(f"{'@'*20} logger.logContextStatusClosing - context set to NOCONTEXT")
         GlobalLogContext.status = LogContextStatus.NOCONTEXT

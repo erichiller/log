@@ -15,7 +15,16 @@ class LogContext(ContextDecorator, Multiton):
 
     _instances: dict = {}
 
-    def __init__(self, logger: logging.Logger = None, title: Union[str, bool, None] = None, heading: Union[str, bool] = True, level: int = None, handler: logging.Handler = None, close: bool = True):
+    # previously this was set to the logcontexts level, which meant it ALWAYS printed.
+    heading_level = logging.INFO
+
+    def __init__(self,
+                 logger: logging.Logger = None,
+                 title: Union[str, bool, None] = None,
+                 heading: Union[str, bool] = True,
+                 level: int = None,
+                 handler: logging.Handler = None,
+                 close: bool = True) -> None:
         """ Initialize LogContext, allows passing of alternate parameters
 
         Parameters
@@ -50,13 +59,13 @@ class LogContext(ContextDecorator, Multiton):
         # obj_idx is set when Multion creates it (it is already set here, this is just a type hint)
 
         self.obj_idx: str
+        self.calling_module, self.calling_class, self.wrapped_function, _, _ = LogContext.getCallingFunction()
         if type(logger) is MethodType:
             self.logger  = logger.__self__  # type: Log
         elif isinstance(logger, logging.Logger):
             self.logger  = logger  # type: Log
         else:
-            self.logger  = logging.getLogger(self.getCallingModule())  # type: Log
-        self.calling_class, self.wrapped_function, _, _ = LogContext.getCallingFunction()
+            self.logger  = logging.getLogger(self.calling_module)  # type: Log
         if title is None:
             self.title = None
         elif type(title) is str:
@@ -78,8 +87,14 @@ class LogContext(ContextDecorator, Multiton):
         if not hasattr(self.logger, "trace"):
             raise TypeError("LogContext's logger attribute must be of type Log")
         if self.level is not None:
+
+            if local_debug is True:
+                print(f"LogContext.title={self.title}")
+                print(self.level)
+                print(self.logger)
             self.old_level = self.logger.level
             self.logger.setLevel(self.level)
+            if local_debug is True: print(f"level now set to {self.level} for {self.logger}")
         if self.handler:
             if self.handler not in self.logger.handlers:
                 self.logger.addHandler(self.handler)
@@ -106,6 +121,7 @@ class LogContext(ContextDecorator, Multiton):
         if not hasattr(self.logger, "trace"):
             raise TypeError("LogContext logger attribute must be of type Log")
         if self.level is not None:
+            if local_debug is True: print(f"__exit__ {self.title} on {self.logger} ; level {self.level} -> {self.old_level}")
             self.logger.setLevel(self.old_level)
         if hasattr(self, 'title') and self.title is not None:
             if local_debug is True: print("++ unset title ++ ", end="")
@@ -139,13 +155,8 @@ class LogContext(ContextDecorator, Multiton):
             return self.title
         return self.getDefaultTitle()
 
-
-    def getCallingModule(self):
-        """ Return calling module , which is most likely to be the Logger name """
-        return inspect.getmodule(inspect.stack()[-1][0]).__name__
-
     @classmethod
-    def getCallingFunction(cls) -> Tuple[str, str, str, str]:
+    def getCallingFunction(cls) -> Tuple[str, str, str, str, str]:
         """ Return calling function , which can be used for a default title
 
         Returns
@@ -173,7 +184,8 @@ class LogContext(ContextDecorator, Multiton):
                     wrapped_function_lineno = outerframes[depth].lineno + 1
                     calling_filename = outerframes[depth].filename
                     calling_class = outerframes[depth].function
-                    return calling_class, wrapped_function, calling_filename, wrapped_function_lineno
+                    calling_module = inspect.getmodule(outerframes[depth].frame).__name__
+                    return calling_module, calling_class, wrapped_function, calling_filename, wrapped_function_lineno
                 # print(f"{'&'*70}")
                 # pprint(outerframes, indent=2)
                 # input("Press Enter to continue...")
@@ -186,13 +198,13 @@ class LogContext(ContextDecorator, Multiton):
             # print_tb(e.__traceback__)
             # pprint(outerframes, indent=2)
             # input("Press Enter to continue...")
-            return False, False, False, False
+            return False, False, False, False, False
 
 
     @classmethod
     def getIndex(cls, **kwargs) -> str:
         """ Return unique string for object """
-        calling_class, wrapped_function, filename, wrapped_function_lineno = LogContext.getCallingFunction()
+        calling_module, calling_class, wrapped_function, filename, wrapped_function_lineno = LogContext.getCallingFunction()
         if type(filename) is str and type(wrapped_function_lineno) in (str, int):
             return f"{filename}:{wrapped_function_lineno}"
         # return IndexError(f"Invalid types returned from `getCallingFunction()` unable to create id for LogContext")
