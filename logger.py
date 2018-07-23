@@ -137,7 +137,7 @@ class Log(logging.Logger):
                     title = self.title
             extra = {
                 'title': title,
-                'heading': heading,
+                'heading': heading if heading is not False and heading is not None else False,
                 'table': table,
                 'relatime': relatime,
                 'location': location,
