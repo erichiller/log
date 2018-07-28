@@ -170,7 +170,8 @@ class Log(logging.Logger):
         """ Receive UNHANDLED Exception from sys and pass to logger """
         # https://stackoverflow.com/questions/6234405/logging-uncaught-exceptions-in-python
         if issubclass(exc_type, KeyboardInterrupt):
-            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            logging.getLogger().info("Caught KeyboardInterrupt, exiting on user input...")
+            # sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
         logging.getLogger().critical(f"Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
@@ -287,3 +288,4 @@ logging.setLoggerClass(Log)
 logging.getLogger(__package__).setLevel(Level.WARNING if not config.DEBUG_LOG_MODULE else Level.DEBUG)
 # Set as exception handler - https://docs.python.org/3/library/sys.html#sys.excepthook
 sys.excepthook = Log.handle_uncaught_exception
+
