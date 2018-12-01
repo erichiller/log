@@ -27,6 +27,7 @@ import pprint
 import os
 import traceback
 import logging
+from collections.abc import Mapping
 
 from lib.common import property_lazy_class
 
@@ -123,11 +124,11 @@ class DynamicLogFormatter(logging.Formatter):
         level_print     = str()
         prepend         = str()
         prependtime     = str()
-        output          = record.msg if hasattr(record, "msg") else str()
+        output          = record.msg                if hasattr(record, "msg") else str()
         location        = str()
         highlight_color = str()
-        heading         = record.args['heading'] if 'heading' in record.args and record.args['heading'] is not False else False
-        title           = heading if heading is not False and type(heading) is str else str()
+        heading         = record.args['heading']    if 'heading' in record.args and record.args['heading'] is not False else False
+        title           = heading                   if heading is not False and type(heading) is str else str()
         # if there are newlines in the output, make it a block.
         if repr(output).count("\n") > 1:
             heading = True
@@ -150,9 +151,11 @@ class DynamicLogFormatter(logging.Formatter):
                 # if table and title, set title to heading
                 iterate_source = output
                 output = str()
-                if isinstance(iterate_source, dict):
+                title = title if title else str(type(iterate_source))
+                print(f"typeof = {type(iterate_source)}")
+                if isinstance(iterate_source, Mapping):
                     iterate_source = iterate_source.items()
-                if isinstance(iterate_source, list):
+                elif isinstance(iterate_source, list):
                     iterate_source = { k: v for k, v in enumerate(iterate_source) }.items()
                 try:
                     iterate_source = iter(iterate_source)
