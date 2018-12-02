@@ -17,14 +17,14 @@ def getLogger(name=None) -> Log:
 
 
 
-trace    = getLogger(config.DEFAULT_LOGGER_NAME).trace
-debug    = getLogger(config.DEFAULT_LOGGER_NAME).debug
-info     = getLogger(config.DEFAULT_LOGGER_NAME).info
-notice   = getLogger(config.DEFAULT_LOGGER_NAME).notice
-warning  = getLogger(config.DEFAULT_LOGGER_NAME).warning
-error    = getLogger(config.DEFAULT_LOGGER_NAME).error
+trace    = getLogger(config.DEFAULT_LOGGER_NAME).tracef
+debug    = getLogger(config.DEFAULT_LOGGER_NAME).debugf
+info     = getLogger(config.DEFAULT_LOGGER_NAME).infof
+notice   = getLogger(config.DEFAULT_LOGGER_NAME).noticef
+warning  = getLogger(config.DEFAULT_LOGGER_NAME).warningf
+error    = getLogger(config.DEFAULT_LOGGER_NAME).errorf
 
-log      = getLogger(config.DEFAULT_LOGGER_NAME).log
+log      = getLogger(config.DEFAULT_LOGGER_NAME).logf
 
 prompt_continue = getLogger(config.DEFAULT_LOGGER_NAME).prompt_continue
 
@@ -129,7 +129,7 @@ def configure_logging(log_file_path: str, log_console_level: int, elastic_log_ho
     os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL']  = '0'
     getLogger('tensorflow').setLevel(Level.WARNING)
-    info("logging configured")
+    info(f"logging configured [console level={logging.getLevelName(log_console_level)}]")
 
 
 

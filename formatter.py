@@ -147,12 +147,15 @@ class DynamicLogFormatter(logging.Formatter):
         try:
             if isinstance( output, str ):
                 pass    # not a table; this is a string, no further processing
+                
+            elif hasattr(output, "to_string") and callable(output.to_string):
+                # mostly useful for pandas.DataFrame
+                output = output.to_string()
             elif table:
                 # if table and title, set title to heading
                 iterate_source = output
                 output = str()
                 title = title if title else str(type(iterate_source))
-                print(f"typeof = {type(iterate_source)}")
                 if isinstance(iterate_source, Mapping):
                     iterate_source = iterate_source.items()
                 elif isinstance(iterate_source, list):
