@@ -35,6 +35,9 @@ class Log(logging.Logger):
 
         logging.Logger.__init__(self, name, level)
 
+        self.warn = self.warning
+        self.warnf = self.warningf
+
         # Allow Log.log.<level>
         for num, name in Level._level_dict.items():
             setattr(Log.log, name, num)

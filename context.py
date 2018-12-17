@@ -84,7 +84,7 @@ class LogContext(ContextDecorator, Multiton):
         local_debug = DEBUG_FLAG.CONTEXT_ENTER
         if local_debug is True: print(f"_______enter {self.obj_idx}, logger context={GlobalLogContext.status} [", end="")
         # test for valid Logger type
-        if not hasattr(self.logger, "trace"):
+        if not hasattr(self.logger, "tracef"):
             raise TypeError("LogContext's logger attribute must be of type Log")
         if self.level is not None:
 
@@ -118,7 +118,7 @@ class LogContext(ContextDecorator, Multiton):
         local_debug = DEBUG_FLAG.CONTEXT_EXIT
         ## make a callback?
         if local_debug is True: print(f"_______exit {self.title}_______ [ ", end="")
-        if not hasattr(self.logger, "trace"):
+        if not hasattr(self.logger, "tracef"):
             raise TypeError("LogContext logger attribute must be of type Log")
         if self.level is not None:
             if local_debug is True: print(f"__exit__ {self.title} on {self.logger} ; level {self.level} -> {self.old_level}")
@@ -167,13 +167,12 @@ class LogContext(ContextDecorator, Multiton):
         wrapped_function_lineno : string    - the line number the wrapped function is defined on
 
         """
-        #NOTE: use line func file to "ID" for @LogSingle
-        #NOTE: add a new context of Logging(False) -> which is this just with level=CRTITICAL
+        # TODO: use line func file to "ID" for @LogSingle
+        # TODO: add a new context of Logging(False) -> which is this just with level=CRTITICAL
         MAX_SEARCH_DEPTH = 5  # starts at 2, 5 means it will skip 0, 1; check 2-5
         outerframes = inspect.getouterframes(inspect.currentframe(), context=3)
         try:
             import re
-            # from pprint import pprint #NOTE:KILL
             for depth in range(2, MAX_SEARCH_DEPTH):
                 if len(outerframes) <= depth and hasattr(outerframes[depth], "code_context") and len(outerframes[depth].code_context) > 0:
                     # array is not long enough, get out
@@ -202,7 +201,7 @@ class LogContext(ContextDecorator, Multiton):
 
 
     @classmethod
-    def getIndex(cls, **kwargs) -> str:
+    def getIndex(cls, *args, **kwargs) -> str:
         """ Return unique string for object """
         calling_module, calling_class, wrapped_function, filename, wrapped_function_lineno = LogContext.getCallingFunction()
         if type(filename) is str and type(wrapped_function_lineno) in (str, int):
