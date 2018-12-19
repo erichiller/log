@@ -5,7 +5,8 @@ import sys
 import os
 from typing import Dict, cast, Union
 
-from lib.log import Log, LogContext, Level, ElasticLogHandler, DynamicLogFormatter
+from lib.log.logger import Log
+from lib.log import LogContext, Level, ElasticLogHandler, DynamicLogFormatter
 from .default_config import LogConfig as config
 from .private import QuietFileHandler
 from lib.common import get_make_path
