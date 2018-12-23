@@ -111,15 +111,25 @@ class DynamicLogFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """ Format message Object (via attributes of LogRecord) of unknown type into printable and easily readable string
 
-        ----
-        msg : varied....
-            actual output, could be object, string
-        heading : title is gerated from this
+        The *Parameters* are fed in through `record`
 
+        Parameters
+        ----------
+        msg
+            actual output, could be object, string
+        heading
+            title is gerated from this
+
+        Notes
+        -----
+        `record.getMessage()` will ALWAYS return a `str()`
+                for the actual object the user provided use `record.msg`
+
+        See Also
+        --------
         https://docs.python.org/3/library/logging.html#logging.LogRecord
         https://docs.python.org/3/library/logging.html#logrecord-attributes
-        NOTE: record.getMessage() will ALWAYS return a str()
-                for the actual object the user provided use `record.msg`
+
         """
         level_print     = str()
         prepend         = str()
@@ -147,7 +157,7 @@ class DynamicLogFormatter(logging.Formatter):
         try:
             if isinstance( output, str ):
                 pass    # not a table; this is a string, no further processing
-                
+
             elif hasattr(output, "to_string") and callable(output.to_string):
                 # mostly useful for pandas.DataFrame
                 output = output.to_string()

@@ -227,12 +227,12 @@ class GlobalLogContext:
     ----------
     status          : LogContextStatus
         Current global state of loggers
-    context_prior   : LogContext
+    context_prior   : lib.log.LogContext
         Previous LogContext object, used to
         close out activity once the first message of a new context begins
-    context_current : LogContext
+    context_current : lib.log.LogContext
         Active LogContext object
-    context_pending : LogContext
+    context_pending : lib.log.LogContext
         Context which will be active with the next log message
 
     """
