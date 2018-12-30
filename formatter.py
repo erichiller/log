@@ -43,9 +43,26 @@ class LogFormatException(SyntaxError):
     pass
 
 
+
+class LogItem:
+    """ Data Class for holding log messages """
+
+    level_print: bool
+    prepend: str
+
+    # Tables
+    # Use a table if
+    #  (1) user sets Table=True
+    #  (2) output of repr is > console_width (taking all output into account)
+
+
+
 class DynamicLogFormatter(logging.Formatter):
     """ Return a dynamic message dependent upon the level """
 
+    # Unit is console lines
+    _default_height          = 24
+    # Unit is console chars
     output_width             = 250
     column_name_width        = 50
     context_marker_width     = 120
@@ -102,6 +119,18 @@ class DynamicLogFormatter(logging.Formatter):
         self.clear = DynamicLogFormatter.ANSI_CLEAR if color is True else ""
         self.eol   = DynamicLogFormatter.ANSI_CLEOL if color is True else ""
 
+    # @property_lazy_class
+    def console_width(self) -> int:
+        import shutil
+        self._console_width, self._console_height = shutil.get_terminal_size(fallback=(self.output_width, self._default_height))
+        if not hasattr(self, "_console_width") or not isinstance(self._console_width, int):
+            # calculate _console_width here
+            # TODO: KIll this line
+            self._console_width = 110
+        return self._console_width
+
+
+
     @property_lazy_class
     def local_module_base(cls) -> str:
         """ Guess what the local module base path is for cancelling out unnecassry prints """
@@ -157,10 +186,10 @@ class DynamicLogFormatter(logging.Formatter):
         try:
             if isinstance( output, str ):
                 pass    # not a table; this is a string, no further processing
-
             elif hasattr(output, "to_string") and callable(output.to_string):
                 # mostly useful for pandas.DataFrame
                 output = output.to_string()
+            # elif table or isinstance(output, (Mapping, list)):
             elif table:
                 # if table and title, set title to heading
                 iterate_source = output
@@ -172,8 +201,17 @@ class DynamicLogFormatter(logging.Formatter):
                     iterate_source = { k: v for k, v in enumerate(iterate_source) }.items()
                 try:
                     iterate_source = iter(iterate_source)
+                    # determine the width of what is added as a table row.
+                    # Don't exceed console width
+                    max_len = 0
                     for d in iterate_source:
-                        output += self.make_row(*d)
+                        _row = self.make_row(*d)
+                        max_len = len(_row) if len(_row) > max_len else max_len
+                        # output += f" Len({len(self.make_row(*d))}) "
+                        output += _row
+                    # print(f"title={title}\nheading={heading}\nmaxlen({max_len})+lentitle({len(title)})+lenheading({len(heading)})")
+                    # if ( max_len + len(title) + len(record.args['title']) ) > self.console_width:
+                    #     output = "\n" + output
                 except TypeError:
                     # raise TypeError("Best handled elsewhere: you requested a table, but this isn't iterable")
                     output += repr(output)

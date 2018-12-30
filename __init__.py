@@ -19,8 +19,9 @@ https://opensource.com/article/17/9/python-logging
 
 See `logging flow <https://docs.python.org/3/howto/logging.html#logging-flow>`
 
-And most of all, the `[LOGGING COOKBOOK]`_ is incredibly useful
-.. _LOGGING COOKBOOK https://docs.python.org/3/howto/logging-cookbook.html
+And most of all, the `LOGGING COOKBOOK`_ is incredibly useful
+
+.. _LOGGING COOKBOOK: https://docs.python.org/3/howto/logging-cookbook.html
 
 `Existing Handlers <https://docs.python.org/3/howto/logging.html#useful-handlers>`
 

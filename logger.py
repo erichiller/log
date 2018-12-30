@@ -310,4 +310,5 @@ logging.setLoggerClass(Log)
 logging.getLogger(__package__).setLevel(Level.WARNING if not config.DEBUG_LOG_MODULE else Level.DEBUG)
 # Set as exception handler - https://docs.python.org/3/library/sys.html#sys.excepthook
 sys.excepthook = Log.handle_uncaught_exception
-
+import colorama
+colorama.init()
