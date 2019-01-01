@@ -17,7 +17,7 @@ from typing import cast, Union, Optional
 
 
 class Level(int):
-    """ desc for levelEnum is here
+    """ desc for Level is here
 
     Attributes
     ----------
@@ -51,12 +51,14 @@ class Level(int):
         if type(id_name) is str:
             cls.ID = getattr(cls, cast(str, id_name))
         # print(f"add level name={id_name} ID={cls.ID}")
-            logging.addLevelName( cls.ID, cast(str, id_name) )
-            cls._level_dict.update({cls.ID: cast(str, id_name)})
+            if cls.ID is not None:
+                logging.addLevelName( cls.ID, cast(str, id_name) )
+                cls._level_dict.update({cls.ID: cast(str, id_name)})
         elif type(id_name) is int:
             cls.ID = cast(int, id_name)
         else:
             TypeError("Level can only be created with a str, or an int (matching one of the present Levels)")
+        # return super().__new__(cls, cls.ID)
         return super().__new__(cls, cls.ID)
 
 
