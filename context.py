@@ -4,7 +4,7 @@ from types import MethodType
 from typing import Union, Tuple, Optional
 import inspect
 
-from lib.common import ContextDecorator, Multiton
+from lib.shared.abc import ContextDecorator, Multiton
 from .private import LogContextStatus, DEBUG_FLAG
 
 

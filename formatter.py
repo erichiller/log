@@ -29,7 +29,7 @@ import traceback
 import logging
 from collections.abc import Mapping
 
-from lib.common import property_lazy_class
+from lib.shared.decorators import property_lazy_class
 
 from .private import LogContextStatus
 from lib.log import Level

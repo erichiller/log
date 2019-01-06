@@ -9,7 +9,7 @@ from lib.log.logger import Log
 from lib.log import LogContext, Level, ElasticLogHandler, DynamicLogFormatter
 from .default_config import LogConfig as config
 from .private import QuietFileHandler
-from lib.common import get_make_path
+from lib.shared.util import get_make_path
 
 
 def getLogger(name=None) -> Log:
