@@ -183,41 +183,42 @@ class DynamicLogFormatter(logging.Formatter):
         flag_location   = record.args["location"]    if 'location'    in record.args else False
         table           = record.args["table"]       if 'table'       in record.args else False
 
-        try:
-            if isinstance( output, str ):
-                pass    # not a table; this is a string, no further processing
-            elif hasattr(output, "to_string") and callable(output.to_string):
-                # mostly useful for pandas.DataFrame
-                output = output.to_string()
-            # elif table or isinstance(output, (Mapping, list)):
-            elif table:
-                # if table and title, set title to heading
-                iterate_source = output
-                output = str()
-                title = title if title else str(type(iterate_source))
-                if isinstance(iterate_source, Mapping):
-                    iterate_source = iterate_source.items()
-                elif isinstance(iterate_source, list):
-                    iterate_source = { k: v for k, v in enumerate(iterate_source) }.items()
-                try:
-                    iterate_source = iter(iterate_source)
-                    # determine the width of what is added as a table row.
-                    # Don't exceed console width
-                    max_len = 0
-                    for d in iterate_source:
-                        _row = self.make_row(*d)
-                        max_len = len(_row) if len(_row) > max_len else max_len
-                        # output += f" Len({len(self.make_row(*d))}) "
-                        output += _row
-                    # print(f"title={title}\nheading={heading}\nmaxlen({max_len})+lentitle({len(title)})+lenheading({len(heading)})")
-                    # if ( max_len + len(title) + len(record.args['title']) ) > self.console_width:
-                    #     output = "\n" + output
-                except TypeError:
-                    # raise TypeError("Best handled elsewhere: you requested a table, but this isn't iterable")
-                    output += repr(output)
+
+    # try:
+        if isinstance( output, str ):
+            pass    # not a table; this is a string, no further processing
+        elif hasattr(output, "to_string") and callable(output.to_string):
+            # mostly useful for pandas.DataFrame
+            output = output.to_string()
+        # elif table or isinstance(output, (Mapping, list)):
+        elif table:
+            # if table and title, set title to heading
+            iterate_source = output
+            output = str()
+            title = title if title else str(type(iterate_source))
+            if isinstance(iterate_source, Mapping):
+                iterate_source = iterate_source.items()
+            elif isinstance(iterate_source, list):
+                iterate_source = { k: v for k, v in enumerate(iterate_source) }.items()
+            # try:
+                iterate_source = iter(iterate_source)
+                # determine the width of what is added as a table row.
+                # Don't exceed console width
+                max_len = 0
+                for d in iterate_source:
+                    _row = self.make_row(*d)
+                    max_len = len(_row) if len(_row) > max_len else max_len
+                    # output += f" Len({len(self.make_row(*d))}) "
+                    output += _row
+                # print(f"title={title}\nheading={heading}\nmaxlen({max_len})+lentitle({len(title)})+lenheading({len(heading)})")
+                # if ( max_len + len(title) + len(record.args['title']) ) > self.console_width:
+                #     output = "\n" + output
+            # except TypeError:
+                # raise TypeError("Best handled elsewhere: you requested a table, but this isn't iterable")
+                # output += repr(output)
             else:
                 raise TypeError("Best handled elsewhere: this is neither a table, nor a string")
-        except TypeError:
+        # except TypeError:
             """ when the object is not a string """
             output = pprint.pformat(output, width=self.output_width, indent=4)
 
