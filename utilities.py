@@ -30,10 +30,12 @@ log      = getLogger(config.DEFAULT_LOGGER_NAME).logf
 prompt_continue = getLogger(config.DEFAULT_LOGGER_NAME).prompt_continue
 
 
-def display_level_status(logger: logging.Logger):
+def display_level_status(logger: Log):
     """ Visually print enabled levels """
     for level in (Level.TRACE, Level.DEBUG, Level.INFO, Level.NOTICE, Level.WARNING, Level.CRITICAL):
-        logger.log(msg=f"log messages of level {level} are enabled", level=level, location=True)
+        logger.logf(msg=f"log messages of level {level} are enabled", level=level, location=True)
+
+
 
 
 
@@ -134,7 +136,7 @@ def configure_logging(log_file_path: str, log_console_level: int, elastic_log_ho
 
 
 
-def _log_console_level(level: Union[int, Level]=None, set_handler_type=logging.StreamHandler) -> Level:
+def _log_console_level(level: Union[int, Level] = None, set_handler_type = logging.StreamHandler) -> Level:
     """ Log level for Root Console """
     if isinstance(level, int ):
         for handler in getLogger().handlers:
@@ -190,3 +192,4 @@ def log_check_formatting(logger=None, debug=False):
             getattr(logger, level_name.lower())(f"Displaying level {level_name} ({level_num}) in color {level_color_str}")
         else:
             print(f"!!\tNo output function `Log.<level>()` defined for level of {level_name} ({level_num})")
+

@@ -1,5 +1,6 @@
 """ Shared datatypes amongst the log submodule """
 
+from typing import Union
 from enum import Enum, unique
 from logging import FileHandler
 
@@ -31,4 +32,11 @@ class DEBUG_FLAG:
     CONTEXT_EXIT           = __MASTER
     CONTEXT_ENTER          = __MASTER
     CONTEXT_ETC            = __MASTER
+
+
+
+def logging_error(msg: Union[str, TypeError, AssertionError]):
+    """ Log an error for the Logger itself, output this via an alternate method """
+    # TODO: make this do something real
+    print(f"LOG ERROR (log_error): {msg}")
 
