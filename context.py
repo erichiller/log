@@ -5,7 +5,7 @@ from typing import Union, Tuple, Optional
 import inspect
 
 from lib.shared.abc import ContextDecorator, Multiton
-from .private import LogContextStatus, DEBUG_FLAG
+from .private import LogContextStatus, DEBUG_FLAG, logging_error
 
 
 
@@ -17,6 +17,8 @@ class LogContext(ContextDecorator, Multiton):
 
     # previously this was set to the logcontexts level, which meant it ALWAYS printed.
     heading_level = logging.INFO
+
+    logger: logging.Logger
 
     def __init__(self,
                  logger: logging.Logger = None,
@@ -60,12 +62,12 @@ class LogContext(ContextDecorator, Multiton):
 
         self.obj_idx: str
         self.calling_module, self.calling_class, self.wrapped_function, _, _ = LogContext.getCallingFunction()
-        if type(logger) is MethodType:
-            self.logger  = logger.__self__  # type: Log
+        if isinstance(logger, MethodType):
+            self.logger  = logger.__self__
         elif isinstance(logger, logging.Logger):
-            self.logger  = logger  # type: Log
+            self.logger  = logger
         else:
-            self.logger  = logging.getLogger(self.calling_module)  # type: Log
+            self.logger  = logging.getLogger(self.calling_module)
         if title is None:
             self.title = None
         elif type(title) is str:
@@ -149,9 +151,9 @@ class LogContext(ContextDecorator, Multiton):
     def getHeading(self) -> Union[str, bool]:
         """ Return heading from one of the sources, False on all fails """
         if DEBUG_FLAG.CONTEXT_ETC is True: print(f"getHeading has been called")
-        if type(self.heading) is str:
+        if isinstance(self.heading, str):
             return self.heading
-        if type(self.title) is str:
+        if isinstance(self.title, str):
             return self.title
         return self.getDefaultTitle()
 
@@ -177,7 +179,7 @@ class LogContext(ContextDecorator, Multiton):
                 if len(outerframes) <= depth and hasattr(outerframes[depth], "code_context") and len(outerframes[depth].code_context) > 0:
                     # array is not long enough, get out
                     break
-                wrapped_function = re.search("def\s*(\w*)\s*\(", outerframes[depth].code_context[-1] )
+                wrapped_function = re.search(r'def\s*(\w*)\s*\(', outerframes[depth].code_context[-1] )
                 if wrapped_function is not None:
                     wrapped_function = wrapped_function.group(1)
                     wrapped_function_lineno = outerframes[depth].lineno + 1
@@ -189,8 +191,9 @@ class LogContext(ContextDecorator, Multiton):
                 # pprint(outerframes, indent=2)
                 # input("Press Enter to continue...")
                 # pprint(outerframes[depth].code_context[-1])
-            raise AssertionError(f"The search string was not found in {wrapped_function}")
+            raise AssertionError(f"The search string was not found in {outerframes[depth].code_context}")
         except (TypeError, AssertionError) as e:
+            logging_error(e)
             # from pprint import pprint
             # from traceback import print_tb
             # print(f"{'!'*70} -> {e}")
