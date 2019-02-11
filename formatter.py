@@ -129,8 +129,6 @@ class DynamicLogFormatter(logging.Formatter):
             self._console_width = 110
         return self._console_width
 
-
-
     @property_lazy_class
     def local_module_base(cls) -> str:
         """ Guess what the local module base path is for cancelling out unnecassry prints """
@@ -200,7 +198,7 @@ class DynamicLogFormatter(logging.Formatter):
                 iterate_source = iterate_source.items()
             elif isinstance(iterate_source, list):
                 iterate_source = { k: v for k, v in enumerate(iterate_source) }.items()
-            # try:
+            try:
                 iterate_source = iter(iterate_source)
                 # determine the width of what is added as a table row.
                 # Don't exceed console width
@@ -213,14 +211,15 @@ class DynamicLogFormatter(logging.Formatter):
                 # print(f"title={title}\nheading={heading}\nmaxlen({max_len})+lentitle({len(title)})+lenheading({len(heading)})")
                 # if ( max_len + len(title) + len(record.args['title']) ) > self.console_width:
                 #     output = "\n" + output
-            # except TypeError:
-                # raise TypeError("Best handled elsewhere: you requested a table, but this isn't iterable")
-                # output += repr(output)
-            else:
-                raise TypeError("Best handled elsewhere: this is neither a table, nor a string")
-        # except TypeError:
-            """ when the object is not a string """
-            output = pprint.pformat(output, width=self.output_width, indent=4)
+            except TypeError:
+                output += repr(output)
+                raise TypeError("Best handled elsewhere: you requested a table, but this isn't iterable")
+        else:
+            # when the object is not a string
+            try:
+                output = pprint.pformat(output, width=self.output_width, indent=4)
+            except Exception as e:
+                raise LogFormatException(f"This is neither a table, nor a string.\nError encountered while using fallback pformat method:\n{e}")
 
         if record.levelno == logging.WARNING:                                   # add levelname
             level_print = f"{record.levelname} "
@@ -386,9 +385,9 @@ class DynamicLogFormatter(logging.Formatter):
     def make_row(self, *args)-> str:
         """ Take unlimited arguments and writes the first one as a `title` column, and alternating ones thereafter to columns of ` title | value | title | value .... ` """
         if len(args) > 1 and (isinstance(args[0], str) or isinstance(args[0], int)):
-            return str(args[0]).ljust(self.column_name_width) + ": " + "".join(map(str, args[1:])) + "\n"
-        elif isinstance(args[0], dict) and len(args) == 1:
-            return self.make_row(**args[0])
+            return str(args[0]).ljust(self.column_name_width) + ": " + "\n".join(map(lambda s: pprint.pformat(s, indent=2) + "\n", args[1:])) + "\n"
+        elif len(args) == 1 and isinstance(args[0], dict):
+            return self.make_row(*args[0].values())
         elif isinstance(repr(args[0]), str):
             return repr(args[0])
         else:

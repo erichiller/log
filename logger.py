@@ -6,7 +6,7 @@ import traceback
 from typing import Optional, Union, cast
 from types import FrameType
 
-from .private import LogContextStatus, QuietFileHandler, DEBUG_FLAG
+from .private import LogContextStatus, QuietFileHandler, DEBUG_FLAG, ANSI_CAPABLE
 from lib.log import Level, GlobalLogContext
 from .default_config import LogConfig as config
 
@@ -310,5 +310,6 @@ logging.setLoggerClass(Log)
 logging.getLogger(__package__).setLevel(Level.WARNING if not config.DEBUG_LOG_MODULE else Level.DEBUG)
 # Set as exception handler - https://docs.python.org/3/library/sys.html#sys.excepthook
 sys.excepthook = Log.handle_uncaught_exception
-import colorama
-colorama.init()
+if not ANSI_CAPABLE:
+    import colorama
+    colorama.init()
