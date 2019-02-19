@@ -66,12 +66,13 @@ class Log(logging.Logger):
         return False
 
 
-    def tracef(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
+    # TODO: Make sure all the logging methods are documented (numpydoc) and that their signatures match this
+    def tracef(self, msg, title: str = None, heading: Union[bool, str, None] = None, table: bool = False, emphasis: bool = False, relatime: bool = True, location: bool = False, exc_info = False):
         """ Incredibly detailed level, report fine actions taken by program
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
-        self.logf(msg=msg, level=Level.TRACE, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
+        self.logf(msg=msg, level=Level.TRACE, title=title, heading=heading, table=table, emphasis=emphasis, relatime=relatime, location=location, exc_info=exc_info)
 
     def debugf(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
         """ Detailed information for the user
@@ -87,12 +88,12 @@ class Log(logging.Logger):
                   location=location,
                   exc_info=exc_info)
 
-    def infof(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
+    def infof(self, msg, title: str = None, heading: Union[bool, str, None] = None, table: bool = False, emphasis: bool = False, relatime: bool = True, location: bool = False, exc_info = False):
         """ General information for the user
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
         """
-        self.logf(msg=msg, level=logging.INFO, title=title, heading=heading, table=table, relatime=relatime, location=location, exc_info=exc_info)
+        self.logf(msg=msg, level=logging.INFO, title=title, heading=heading, table=table, emphasis=emphasis, relatime=relatime, location=location, exc_info=exc_info)
 
     def noticef(self, msg, title: str=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False):
         """ Elevated information for the user
@@ -119,7 +120,7 @@ class Log(logging.Logger):
         """ Override underlying log to allow for any function to pass in args and kwargs and have them written out formatted. """
         self.logf(level, msg)
 
-    def logf(self, level=logging.INFO, msg=None, title: Optional[str]=None, heading: Union[bool, str, None]=None, table: bool=False, relatime: bool=True, location: bool=False, exc_info=False, *args, **kwargs):
+    def logf(self, level=logging.INFO, msg=None, title: Optional[str] = None, heading: Union[bool, str, None] = None, table: bool = False, emphasis: bool = False, relatime: bool = True, location: bool = False, exc_info=False, *args, **kwargs):
         """ Define Custom logger with additional arguments.
 
         Note: To log **OBJECTS** or other two dimensional data forms, put the data into msg, and set table = True
@@ -158,6 +159,7 @@ class Log(logging.Logger):
                 'title': title,
                 'heading': heading if heading is not False and heading is not None else False,
                 'table': table,
+                'emphasis': emphasis,
                 'relatime': relatime,
                 'location': location,
                 'filename': filename,

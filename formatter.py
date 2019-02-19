@@ -31,7 +31,7 @@ from collections.abc import Mapping
 
 from lib.shared.decorators import property_lazy_class
 
-from .private import LogContextStatus
+from .private import LogContextStatus, logging_error
 from lib.log import Level
 from .default_config import LogConfig as config
 
@@ -107,6 +107,8 @@ class DynamicLogFormatter(logging.Formatter):
 
     COLOR_CONTEXT_MARKER     = ANSI_GREEN
 
+    COLOR_EMPHASIS           = ANSI_BG_RED
+
     COLOR_DEFAULT            = ANSI_CYAN
 
     def __init__(self, color: bool = False) -> None:
@@ -119,7 +121,7 @@ class DynamicLogFormatter(logging.Formatter):
         self.clear = DynamicLogFormatter.ANSI_CLEAR if color is True else ""
         self.eol   = DynamicLogFormatter.ANSI_CLEOL if color is True else ""
 
-    # @property_lazy_class
+    @property_lazy_class
     def console_width(self) -> int:
         import shutil
         self._console_width, self._console_height = shutil.get_terminal_size(fallback=(self.output_width, self._default_height))
@@ -167,8 +169,11 @@ class DynamicLogFormatter(logging.Formatter):
         heading         = record.args['heading']    if 'heading' in record.args and record.args['heading'] is not False else False
         title           = heading                   if heading is not False and type(heading) is str else str()
         # if there are newlines in the output, make it a block.
-        if repr(output).count("\n") > 1:
-            heading = True
+        try:
+            if repr(output).count("\n") > 1:
+                heading = True
+        except Exception as e:
+            logging_error(f"Failure in {self.__class__.__name__} when requesting repr of {output.__class__.__name__} with exception:\n\t{e}")
         # typically closing is done in the same log message as heading
         # but this is disabled when in context
         closing         = heading
@@ -176,18 +181,22 @@ class DynamicLogFormatter(logging.Formatter):
         context         = record.args['context'] if 'context' in record.args and record.args['context'] in (LogContextStatus.OPENING, LogContextStatus.CURRENT, LogContextStatus.CLOSING) else False
         clear           = self.clear
         eol             = self.eol
+        emphasis        = record.args["emphasis"]    if 'emphasis'    in record.args else False
         relatime        = record.args["relatime"]    if 'relatime'    in record.args else False
         stack_trace     = record.args['stack_trace'] if "stack_trace" in record.args and type(record.args['stack_trace']) is list else False
         flag_location   = record.args["location"]    if 'location'    in record.args else False
         table           = record.args["table"]       if 'table'       in record.args else False
 
 
+        flag_location = True   # TODO: KILL
     # try:
         if isinstance( output, str ):
             pass    # not a table; this is a string, no further processing
-        elif hasattr(output, "to_string") and callable(output.to_string):
+        elif not isinstance(output, type) and hasattr(output, "to_string") and callable(output.to_string):
             # mostly useful for pandas.DataFrame
-            output = output.to_string()
+            from lib.shared.util import FormatDataFrame
+            with FormatDataFrame(max_colwidth=0):
+                output = output.to_string()
         # elif table or isinstance(output, (Mapping, list)):
         elif table:
             # if table and title, set title to heading
@@ -329,7 +338,11 @@ class DynamicLogFormatter(logging.Formatter):
         highlight_color = color if highlight_color == "" else highlight_color
         # used below llne purely for debugging what was my logs and what wasn't
         # else: color = f"{self.ANSI_BG_MAGENTA}{color}"
-        return context_marker + f"{color}{prependtime}{location}{highlight_color}{prepend}{title}{clear}{color}{output}{eol}{clear}".replace(f"\n{clear}", f"{eol}{clear}\n").replace("\n", f"\n{' ' * len(prependtime)}")
+        return ( ( context_marker +
+                    ( ( f"{self.COLOR_EMPHASIS if self.color else ''}" + ( '▼' * self.console_width ) + clear ) if emphasis else '' ) +
+                    f"{color}{prependtime}{location}{highlight_color}{prepend}{title}{clear}{color}{output}{eol}{clear}"
+                   ).replace(f"\n{clear}", f"{eol}{clear}\n").replace("\n", f"\n{' ' * len(prependtime)}")  +
+                 ( ( '\n' + f"{self.COLOR_EMPHASIS if self.color else ''}" + ( '▲' * self.console_width ) + clear ) if emphasis else '' ) )
 
     def highlightTextOnly(self, text, color) -> str:
         """ Highlight only text; trim """
@@ -385,7 +398,7 @@ class DynamicLogFormatter(logging.Formatter):
     def make_row(self, *args)-> str:
         """ Take unlimited arguments and writes the first one as a `title` column, and alternating ones thereafter to columns of ` title | value | title | value .... ` """
         if len(args) > 1 and (isinstance(args[0], str) or isinstance(args[0], int)):
-            return str(args[0]).ljust(self.column_name_width) + ": " + "\n".join(map(lambda s: pprint.pformat(s, indent=2) + "\n", args[1:])) + "\n"
+            return str(args[0]).ljust(self.column_name_width) + ": " + "\n".join(map(lambda s: pprint.pformat(s, indent=2) + "\n", args[1:]))
         elif len(args) == 1 and isinstance(args[0], dict):
             return self.make_row(*args[0].values())
         elif isinstance(repr(args[0]), str):

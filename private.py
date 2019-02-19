@@ -41,6 +41,9 @@ def logging_error(msg: Union[str, TypeError, AssertionError]) -> None:
     """ Log an error for the Logger itself, output this via an alternate method """
     # TODO: make this do something real
     print(f"LOG ERROR (log_error): {msg}")
+    with open(os.path.join(os.environ['HOME'], 'logging_errors.log'), 'a') as f:
+        f.writelines(f"LOG ERROR (log_error): {msg}")
+
 
 
 def _supports_ansi() -> bool:
