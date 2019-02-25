@@ -188,7 +188,7 @@ class DynamicLogFormatter(logging.Formatter):
         table           = record.args["table"]       if 'table'       in record.args else False
 
 
-        flag_location = True   # TODO: KILL
+        # flag_location = True   # TODO: KILL
     # try:
         if isinstance( output, str ):
             pass    # not a table; this is a string, no further processing

@@ -89,7 +89,6 @@ class LogContext(ContextDecorator, Multiton):
         if not hasattr(self.logger, "tracef"):
             raise TypeError("LogContext's logger attribute must be of type Log")
         if self.level is not None:
-
             if local_debug is True:
                 print(f"LogContext.title={self.title}")
                 print(self.level)
