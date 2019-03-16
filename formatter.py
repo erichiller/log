@@ -160,6 +160,7 @@ class DynamicLogFormatter(logging.Formatter):
         https://docs.python.org/3/library/logging.html#logrecord-attributes
 
         """
+        if record.args is None: record.args = []
         level_print     = str()
         prepend         = str()
         prependtime     = str()
@@ -395,7 +396,7 @@ class DynamicLogFormatter(logging.Formatter):
             path = os.path.relpath(path, config.BASE_PATH)
         return f"{prefix + ' ' + path:100} , {'line # ' + str(line):12} in {func:30}"
 
-    def make_row(self, *args)-> str:
+    def make_row(self, *args) -> str:
         """ Take unlimited arguments and writes the first one as a `title` column, and alternating ones thereafter to columns of ` title | value | title | value .... ` """
         if len(args) > 1 and (isinstance(args[0], str) or isinstance(args[0], int)):
             return str(args[0]).ljust(self.column_name_width) + ": " + "\n".join(map(lambda s: pprint.pformat(s, indent=2) + "\n", args[1:]))

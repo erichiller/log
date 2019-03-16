@@ -135,7 +135,7 @@ class Log(logging.Logger):
                     _level = msg
                     msg = level
                     level = _level
-            filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
+            # filename, line_number, function_name, stack_trace = self.findCaller(exc_info is not False)
             # CLOSE context
             if GlobalLogContext.status == LogContextStatus.CURRENT and GlobalLogContext.context_current is not None and hasattr(GlobalLogContext.context_current, "context_count"):
                 GlobalLogContext.context_current.context_count = GlobalLogContext.context_current.context_count + 1
@@ -162,11 +162,11 @@ class Log(logging.Logger):
                 'emphasis': emphasis,
                 'relatime': relatime,
                 'location': location,
-                'filename': filename,
-                'line_number': line_number,
-                'function_name': function_name,
-                'stack_trace': stack_trace,
-                'exc_info': self.exc_info(stack_trace)
+                # 'filename': filename,
+                # 'line_number': line_number,
+                # 'function_name': function_name,
+                # 'stack_trace': stack_trace,
+                # 'exc_info': self.exc_info(stack_trace)
             }
             logging.Logger.log(self, int(level), msg, {**kwargs, **extra} )
         except OSError as e:
